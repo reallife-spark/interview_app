@@ -47,7 +47,7 @@ user-pasted text is authoritative.
 | At least 5 system prompts with different techniques | six techniques in `PromptLibrary`; `PROMPTS.md` | Done |
 | Check which prompt works best | `scripts/evaluate_prompts.py`; `EVALUATION.md`; offline fixture; live user-gated | Partial |
 | Defensive system prompt | `prompts/_lib/defensive.py`; `GuardrailPipeline`; `SECURITY.md` | Done |
-| Off-topic demo | `DEMO.md`; prompt-level tests in Phase 12 Step 87 | Manual/partial |
+| Off-topic demo | `DEMO.md`; defensive-prompt tests | Done: prompt-level + manual demo |
 | Prompt-injection demo | red-team fixtures; `DEMO.md`; strict mode | Done |
 | UI for a real interview-preparation experience | Prepare / Practice / Coach; `AppTest` | Done |
 | Reflection and improvement | `README.md` limitations; `USER_MANUAL.md`; `RESEARCH.md` | Will be complete in Phase 12 |

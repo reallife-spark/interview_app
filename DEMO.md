@@ -74,7 +74,8 @@ Open **Coach** and send:
 > What is the weather in Berlin?
 
 Expected: a polite refusal that redirects to interview preparation. The app
-should not answer the weather question.
+should not answer the weather question. This is prompt-level behaviour; the
+regex guard is not an off-topic classifier.
 
 ## 5. Defensive prompt: injection (60 seconds)
 

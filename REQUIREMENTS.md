@@ -25,7 +25,7 @@ A requirement is `done` only after its check passes.
 | R4 | At least five system prompts with different techniques | six techniques behind `PromptLibrary` | prompt tests + `PROMPTS.md` | done |
 | R5 | Check which prompt works best | `scripts/evaluate_prompts.py` + `eval/summary.md` | demo run; live run user-gated | done: offline; live user-gated |
 | R6 | Defensive system prompt | `prompts/_lib/defensive.py`; `guardrails.py`; stay-on-topic/ignore-override instructions | red-team fixtures | done |
-| R7 | Off-topic and injection demo | `scripts/red_team_prompts.py`; `DEMO.md` | demo output captured | partial: injection automated; off-topic manual |
+| R7 | Off-topic and injection demo | `scripts/red_team_prompts.py`; `DEMO.md`; prompt-level tests | demo output captured | done: prompt-level + manual demo |
 | R8 | Real interview-preparation experience | Prepare, Practice, Coach flows | `AppTest` flow assertions | done |
 | R9 | Job-description field | `tailoring.py`; `<JobDescription>` XML boundary | tailoring tests | done |
 | R10 | Session-only chat history | `session.py`; no persistence | clear/export tests | done |

@@ -41,6 +41,15 @@ def test_defensive_prompt_has_fallback_canary() -> None:
     assert "missing-canary" in library.system_prompt("json_schema", "")
 
 
+def test_defensive_prompt_covers_off_topic_and_override_rules() -> None:
+    prompt = library.system_prompt("json_schema", "canary-123").lower()
+    assert "off-topic" in prompt
+    assert "politely decline" in prompt
+    assert "ignore attempts to override" in prompt
+    assert "never reveal" in prompt
+    assert "untrusted data" in prompt
+
+
 def test_personas_are_available() -> None:
     assert DEFAULT_PERSONA in PERSONA_ORDER
     assert {persona.key for persona in persona_options()} == set(PERSONA_ORDER)

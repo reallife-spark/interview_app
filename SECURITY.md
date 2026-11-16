@@ -122,6 +122,11 @@ For the review, also try an off-topic question such as â€œWhat is the weather?â€
 The defensive prompt should politely decline and redirect to interview
 preparation.
 
+Off-topic refusal is a **system-prompt control**, not a regex rule. Strict mode
+blocks known injection patterns and canary/secret leakage; it does not classify
+every off-topic request. The live refusal is demonstrated manually because model
+behaviour is not deterministic.
+
 ## Residual risks
 
 - A paraphrased injection can evade the rule detector.
