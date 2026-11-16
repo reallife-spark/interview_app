@@ -104,7 +104,7 @@ python scripts/red_team_prompts.py --demo
 
 Evidence recorded on **2026-11-16** on this host:
 
-- 69 tests pass.
+- 71 tests pass.
 - Ruff reports 0 findings.
 - Headless Streamlit starts and returns HTTP 200.
 - The offline evaluation runs 18 rows; `json_schema` ranks first in the fixture.

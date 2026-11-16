@@ -44,7 +44,7 @@ A requirement is `done` only after its check passes.
 | R23 | Evaluation documentation | `EVALUATION.md`; `eval/results.csv`; `eval/summary.md` | demo/live result recorded | done |
 | R24 | Deployment documentation | `DEPLOYMENT.md`; Streamlit secrets | user-confirmed deploy | done |
 | R25 | Course repo submission | `course` remote; push to `rmobil-AE.1.5` | user checks GitHub page | blocked: 403, authorize TuringCollegeSubmissions |
-| R26 | Private backup repo | `interview_app` under `reallife-spark`; pushed, tag `v0.1.0` | user checks GitHub page | done |
+| R26 | Private backup repo | `interview_app` under `reallife-spark`; pushed, tag `v0.1.1` | user checks GitHub page | done |
 | R27 | No secrets in tracked content | `.gitignore`; `.env.example`; secret scan | `git grep`/scanner | done |
 | R28 | No live claim from development host | docs use “implemented and tested” or “not verified here” | doc review | done |
 | R29 | Deadline discipline | MVP first; optional tasks after required features | timeline check | done |

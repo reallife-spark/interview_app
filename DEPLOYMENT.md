@@ -25,7 +25,7 @@ creating or pushing. Do not create the private repo under a different account.
 
 **Current check (2026-11-16):** the private repo
 `https://github.com/reallife-spark/interview_app` was created and `main` pushed
-tagged `v0.1.0`. The `course` remote was added, but `git ls-remote course` returned
+tagged `v0.1.1`. The `course` remote was added, but `git ls-remote course` returned
 HTTP 403 (`Write access to repository not granted`). The course mirror is
 blocked until `TuringCollegeSubmissions` access is authorized and the LMS
 GitHub URL is confirmed. See `HANDOFF.md`.
@@ -72,7 +72,7 @@ python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 ```
 
-Expected on this host (2026-11-16): 69 tests, Ruff 0, 18 evaluation rows,
+Expected on this host (2026-11-16): 71 tests, Ruff 0, 18 evaluation rows,
 red-team fixtures pass.
 
 ## Git: private repo and course mirror

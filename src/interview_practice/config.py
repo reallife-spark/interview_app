@@ -7,7 +7,8 @@ with ``repr=False`` so an accidental dataclass dump does not leak them.
 from __future__ import annotations
 
 import os
-from dataclasses import asdict, dataclass, field
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field, replace
 from typing import Literal
 
 ProviderName = Literal["demo", "openrouter", "local"]
@@ -146,3 +147,32 @@ class Settings:
     @property
     def has_openrouter_key(self) -> bool:
         return bool(self.openrouter_api_key)
+
+
+def apply_secret_values(
+    settings: Settings,
+    values: Mapping[str, object],
+) -> Settings:
+    """Merge Streamlit secrets without exposing them in the UI.
+
+    Streamlit Cloud exposes secrets through ``st.secrets``, not reliably through
+    ``os.environ``. The UI passes the secret mapping here; the core stays
+    framework-independent and the key remains ``repr=False``.
+    """
+
+    updates: dict[str, object] = {}
+    key = values.get("OPENROUTER_API_KEY")
+    if isinstance(key, str) and key.strip():
+        updates["openrouter_api_key"] = key.strip()
+        if settings.provider == "demo":
+            updates["provider"] = "openrouter"
+    model = values.get("OPENROUTER_MODEL")
+    if isinstance(model, str) and model.strip():
+        updates["model"] = model.strip()
+    local_key = values.get("LOCAL_API_KEY")
+    if isinstance(local_key, str) and local_key.strip():
+        updates["local_api_key"] = local_key.strip()
+    local_model = values.get("LOCAL_MODEL")
+    if isinstance(local_model, str) and local_model.strip():
+        updates["local_model"] = local_model.strip()
+    return replace(settings, **updates)

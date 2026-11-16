@@ -1,4 +1,9 @@
-from interview_practice.config import COURSE_MODELS, DEFAULT_MODEL, Settings
+from interview_practice.config import (
+    COURSE_MODELS,
+    DEFAULT_MODEL,
+    Settings,
+    apply_secret_values,
+)
 
 ENV_NAMES = (
     "PROVIDER",
@@ -75,3 +80,29 @@ def test_course_models_are_the_three_expected_ids() -> None:
         "anthropic/claude-sonnet-5.5",
         "openai/gpt-6.1-sol",
     )
+
+
+def test_streamlit_secret_enables_openrouter() -> None:
+    base = Settings(provider="demo")
+    settings = apply_secret_values(
+        base,
+        {
+            "OPENROUTER_API_KEY": "secret-openrouter",
+            "OPENROUTER_MODEL": "anthropic/claude-sonnet-5.5",
+        },
+    )
+    assert settings.provider == "openrouter"
+    assert settings.openrouter_api_key == "secret-openrouter"
+    assert settings.model == "anthropic/claude-sonnet-5.5"
+    assert "secret-openrouter" not in repr(settings)
+    settings.validate()
+
+
+def test_streamlit_secret_does_not_override_local_provider() -> None:
+    base = Settings(
+        provider="local",
+        local_base_url="http://127.0.0.1:21464/v1",
+    )
+    settings = apply_secret_values(base, {"OPENROUTER_API_KEY": "secret-openrouter"})
+    assert settings.provider == "local"
+    assert settings.openrouter_api_key == "secret-openrouter"

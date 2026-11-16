@@ -14,6 +14,7 @@ from interview_practice.config import (
     ALLOWED_REASONING_EFFORTS,
     COURSE_MODELS,
     Settings,
+    apply_secret_values,
 )
 from interview_practice.cost import format_usd
 from interview_practice.engine import (
@@ -38,6 +39,17 @@ PROVIDER_LABELS = {
 MODEL_INDEX = {model: index for index, model in enumerate(COURSE_MODELS)}
 
 
+def _runtime_settings() -> Settings:
+    """Read env first, then merge Streamlit Cloud secrets."""
+
+    base = Settings.from_env()
+    try:
+        values = dict(st.secrets)
+    except Exception:
+        return base
+    return apply_secret_values(base, values)
+
+
 def render_app() -> None:
     st.set_page_config(
         page_title="Interview Practice Coach",
@@ -45,7 +57,7 @@ def render_app() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    base = Settings.from_env()
+    base = _runtime_settings()
     session = _session()
     settings, technique = _sidebar(base, session)
     try:
