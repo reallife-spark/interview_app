@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
-class SecretFinding:
+class _SecretFinding:
     kind: str
     start: int
     end: int
@@ -35,14 +35,14 @@ _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
-class SecretScanner:
+class _SecretScanner:
     """Find and redact common credential shapes; not a complete detector."""
 
-    def scan(self, text: str) -> list[SecretFinding]:
-        findings: list[SecretFinding] = []
+    def scan(self, text: str) -> list[_SecretFinding]:
+        findings: list[_SecretFinding] = []
         for kind, pattern in _SECRET_PATTERNS:
             findings.extend(
-                SecretFinding(kind, match.start(), match.end())
+                _SecretFinding(kind, match.start(), match.end())
                 for match in pattern.finditer(text)
             )
         return sorted(findings, key=lambda finding: (finding.start, finding.end))
@@ -92,7 +92,7 @@ _INJECTION_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
-class InjectionDetector:
+class _InjectionDetector:
     """Rule-based prompt-injection detector; a layer, not a guarantee."""
 
     def detect(self, text: str) -> str | None:
@@ -140,8 +140,8 @@ class GuardrailPipeline:
         self.max_input_chars = max_input_chars
         self.max_output_chars = max_output_chars
         self.strict = strict
-        self.scanner = SecretScanner()
-        self.detector = InjectionDetector()
+        self._scanner = _SecretScanner()
+        self._detector = _InjectionDetector()
 
     def check_input(self, text: str) -> GuardrailResult:
         if not text.strip():
@@ -152,8 +152,8 @@ class GuardrailPipeline:
                 "",
                 blocked_reason="input too large",
             )
-        if self.scanner.scan(text):
-            redacted = self.scanner.redact(text)
+        if self._scanner.scan(text):
+            redacted = self._scanner.redact(text)
             return GuardrailResult(
                 False,
                 redacted,
@@ -161,7 +161,7 @@ class GuardrailPipeline:
                 blocked_reason="secret detected in input",
                 matched_rules=("secret",),
             )
-        rules = self.detector.detect_all(text)
+        rules = self._detector.detect_all(text)
         if rules:
             if self.strict:
                 return GuardrailResult(
@@ -188,8 +188,8 @@ class GuardrailPipeline:
                 "",
                 blocked_reason="output too large",
             )
-        if self.scanner.scan(text):
-            redacted = self.scanner.redact(text)
+        if self._scanner.scan(text):
+            redacted = self._scanner.redact(text)
             return GuardrailResult(
                 False,
                 redacted,
@@ -205,7 +205,7 @@ class GuardrailPipeline:
             safe_text = text.replace(canary, "[REDACTED:CANARY]")
             warnings.append("canary leaked in output")
             rules.append("canary_leak")
-        detected = self.detector.detect_all(text)
+        detected = self._detector.detect_all(text)
         if detected:
             warnings.append(f"possible injection pattern in output: {detected[0]}")
             rules.extend(detected)

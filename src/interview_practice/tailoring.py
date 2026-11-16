@@ -47,7 +47,7 @@ class TailoredContext:
         return " ".join(parts)
 
 
-def prepare_job_description(
+def _prepare_job_description(
     text: str,
     *,
     max_chars: int = MAX_JOB_DESCRIPTION_CHARS,
@@ -63,7 +63,7 @@ def prepare_job_description(
     return cleaned[:max_chars].rstrip(), True, original_chars
 
 
-def chunk_text(
+def _chunk_text(
     text: str,
     *,
     max_chars: int = DEFAULT_CHUNK_CHARS,
@@ -96,7 +96,7 @@ def chunk_text(
     return tuple(chunks)
 
 
-def select_chunks(
+def _select_chunks(
     query: str,
     chunks: tuple[str, ...],
     *,
@@ -123,7 +123,7 @@ def build_tailored_context(
     max_chars: int = MAX_JOB_DESCRIPTION_CHARS,
     top_k: int = DEFAULT_TOP_K,
 ) -> TailoredContext:
-    capped, truncated, original_chars = prepare_job_description(
+    capped, truncated, original_chars = _prepare_job_description(
         job_description, max_chars=max_chars
     )
     if not capped:
@@ -144,8 +144,8 @@ def build_tailored_context(
             selected_chunks=0,
             max_chars=max_chars,
         )
-    chunks = chunk_text(capped)
-    selected = select_chunks(query, chunks, top_k=top_k)
+    chunks = _chunk_text(capped)
+    selected = _select_chunks(query, chunks, top_k=top_k)
     if not selected:
         return TailoredContext(
             text=capped,

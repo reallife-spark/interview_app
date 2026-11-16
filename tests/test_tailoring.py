@@ -1,49 +1,23 @@
-from interview_practice.tailoring import (
-    build_tailored_context,
-    chunk_text,
-    prepare_job_description,
-    select_chunks,
-)
+from interview_practice.tailoring import build_tailored_context
 
 
-def test_prepare_job_description_truncates_visibly() -> None:
-    text, truncated, original = prepare_job_description("x" * 9000, max_chars=100)
-    assert len(text) == 100
-    assert truncated
-    assert original == 9000
+def test_truncation_is_visible() -> None:
+    context = build_tailored_context("x" * 9000, query="", max_chars=100)
+    assert len(context.text) == 100
+    assert context.truncated
+    assert context.original_chars == 9000
+    assert "truncated" in context.notice.lower()
 
 
-def test_prepare_empty_job_description() -> None:
-    text, truncated, original = prepare_job_description("   ")
-    assert text == ""
-    assert not truncated
-    assert original == 0
+def test_empty_job_description() -> None:
+    context = build_tailored_context("   ", query="")
+    assert context.text == ""
+    assert not context.truncated
+    assert context.original_chars == 0
+    assert "No job description" in context.notice
 
 
-def test_chunk_text_respects_limit() -> None:
-    text = "\n\n".join(
-        [
-            "Python and RAG evaluation. " * 20,
-            "Kubernetes deployment and GPU scheduling. " * 20,
-            "Stakeholder communication and incident review. " * 20,
-        ]
-    )
-    chunks = chunk_text(text, max_chars=120)
-    assert chunks
-    assert all(len(chunk) <= 120 for chunk in chunks)
-
-
-def test_select_chunks_prefers_relevant_topic() -> None:
-    chunks = (
-        "Python and RAG evaluation with labelled data.",
-        "Kubernetes deployment and GPU scheduling for inference.",
-        "Stakeholder communication and incident review.",
-    )
-    assert select_chunks("Kubernetes deployment", chunks, top_k=1) == (1,)
-    assert select_chunks("RAG evaluation", chunks, top_k=1) == (0,)
-
-
-def test_tailored_context_uses_whole_short_description() -> None:
+def test_short_description_uses_whole_text() -> None:
     context = build_tailored_context(
         "AI engineer with Python and RAG experience.",
         query="RAG",
@@ -54,7 +28,7 @@ def test_tailored_context_uses_whole_short_description() -> None:
     assert context.notice == ""
 
 
-def test_tailored_context_uses_rag_for_long_description() -> None:
+def test_rag_lite_selects_relevant_topic() -> None:
     paragraphs = [
         "Python and RAG evaluation with labelled data and regression gates. " * 4,
         "Kubernetes deployment, GPU scheduling, and inference capacity planning. " * 4,
@@ -67,9 +41,8 @@ def test_tailored_context_uses_rag_for_long_description() -> None:
         "Data pipelines, retrieval quality, and embedding drift monitoring. " * 4,
         "Cost controls, rate limits, and production observability. " * 4,
     ]
-    job_description = "\n\n".join(paragraphs)
     context = build_tailored_context(
-        job_description,
+        "\n\n".join(paragraphs),
         query="Kubernetes GPU inference",
         enable_lexical_rag=True,
         top_k=3,
