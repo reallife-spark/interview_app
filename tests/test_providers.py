@@ -1,0 +1,182 @@
+import json
+
+import pytest
+
+from interview_practice.config import Settings
+from interview_practice.providers import build_provider
+from interview_practice.providers.base import ChatMessage, ProviderError
+from interview_practice.providers.demo import DemoProvider
+from interview_practice.providers.local import OpenAILocalProvider
+from interview_practice.providers.openrouter import OpenRouterProvider
+
+
+class FakeResponse:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+
+    def json(self):
+        return self._payload
+
+
+class FakeSession:
+    def __init__(self, *, get_response=None, post_response=None):
+        self.get_response = get_response
+        self.post_response = post_response
+        self.last_get = None
+        self.last_post = None
+
+    def get(self, url, **kwargs):
+        self.last_get = (url, kwargs)
+        if self.get_response is None:
+            raise AssertionError("unexpected GET")
+        return self.get_response
+
+    def post(self, url, **kwargs):
+        self.last_post = (url, kwargs)
+        if self.post_response is None:
+            raise AssertionError("unexpected POST")
+        return self.post_response
+
+
+def test_openrouter_requires_key() -> None:
+    with pytest.raises(ProviderError, match="OPENROUTER_API_KEY"):
+        OpenRouterProvider("")
+
+
+def test_openrouter_complete_shapes_request_and_parses_usage() -> None:
+    response = FakeResponse(
+        {
+            "model": "openai/gpt-6-luna",
+            "choices": [
+                {
+                    "message": {"content": "Hello"},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 12,
+                "completion_tokens": 3,
+                "total_tokens": 15,
+                "cost": 0.0001,
+            },
+        }
+    )
+    session = FakeSession(post_response=response)
+    provider = OpenRouterProvider("test-key", session=session)
+    completion = provider.complete(
+        [ChatMessage("system", "s"), ChatMessage("user", "u")],
+        model="openai/gpt-6-luna",
+        temperature=0.3,
+        max_tokens=200,
+        top_p=0.9,
+        reasoning_effort="low",
+        response_format={"type": "json_object"},
+    )
+    assert completion.text == "Hello"
+    assert completion.prompt_tokens == 12
+    assert completion.completion_tokens == 3
+    assert completion.cost_usd == 0.0001
+    assert completion.finish_reason == "stop"
+    url, kwargs = session.last_post
+    assert url.endswith("/chat/completions")
+    assert kwargs["headers"]["Authorization"] == "Bearer test-key"
+    assert kwargs["json"]["model"] == "openai/gpt-6-luna"
+    assert kwargs["json"]["messages"] == [
+        {"role": "system", "content": "s"},
+        {"role": "user", "content": "u"},
+    ]
+    assert kwargs["json"]["reasoning"] == {"effort": "low"}
+    assert kwargs["json"]["response_format"] == {"type": "json_object"}
+
+
+def test_openrouter_http_error_is_safe() -> None:
+    provider = OpenRouterProvider(
+        "test-key",
+        session=FakeSession(post_response=FakeResponse({}, status_code=429)),
+    )
+    with pytest.raises(ProviderError, match="429"):
+        provider.complete(
+            [ChatMessage("user", "u")],
+            model="openai/gpt-6-luna",
+            temperature=0.7,
+            max_tokens=50,
+            top_p=1.0,
+        )
+
+
+def test_openrouter_lists_models() -> None:
+    provider = OpenRouterProvider(
+        "test-key",
+        session=FakeSession(
+            get_response=FakeResponse(
+                {"data": [{"id": "b/model"}, {"id": "a/model"}]}
+            )
+        ),
+    )
+    assert provider.list_models() == ["a/model", "b/model"]
+
+
+def test_local_provider_autodetects_model_and_has_no_cost() -> None:
+    session = FakeSession(
+        get_response=FakeResponse({"data": [{"id": "qwen-local"}]}),
+        post_response=FakeResponse(
+            {
+                "model": "qwen-local",
+                "choices": [{"message": {"content": "local answer"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2},
+            }
+        ),
+    )
+    provider = OpenAILocalProvider("http://127.0.0.1:21464/v1", session=session)
+    assert provider.list_models() == ["qwen-local"]
+    completion = provider.complete(
+        [ChatMessage("user", "u")],
+        model="",
+        temperature=0.7,
+        max_tokens=50,
+        top_p=1.0,
+    )
+    assert completion.text == "local answer"
+    assert completion.cost_usd == 0.0
+    assert session.last_post[1]["json"]["model"] == "qwen-local"
+
+
+def test_demo_provider_returns_question_json() -> None:
+    provider = DemoProvider()
+    completion = provider.complete(
+        [ChatMessage("user", "Generate a QuestionSet for an AI engineer")],
+        model="demo/interview-coach",
+        temperature=0.7,
+        max_tokens=400,
+        top_p=1.0,
+    )
+    payload = json.loads(completion.text)
+    assert payload["role"] == "AI engineer"
+    assert len(payload["questions"]) == 3
+    assert completion.cost_usd == 0.0
+
+
+def test_demo_provider_returns_evaluation_json() -> None:
+    provider = DemoProvider()
+    completion = provider.complete(
+        [ChatMessage("user", "Evaluate this answer and return AnswerEvaluation")],
+        model="demo/interview-coach",
+        temperature=0.7,
+        max_tokens=400,
+        top_p=1.0,
+    )
+    payload = json.loads(completion.text)
+    assert 0 <= payload["score"] <= 100
+    assert "improved_answer" in payload
+
+
+def test_factory_does_not_fallback_from_local() -> None:
+    settings = Settings(provider="local", local_base_url="")
+    with pytest.raises(ProviderError, match="LOCAL_BASE_URL"):
+        build_provider(settings)
+
+
+def test_factory_returns_demo() -> None:
+    provider = build_provider(Settings(provider="demo"))
+    assert isinstance(provider, DemoProvider)
