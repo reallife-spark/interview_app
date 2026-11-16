@@ -58,7 +58,8 @@ OPENROUTER_API_KEY=your-key-here
 OPENROUTER_MODEL=openai/gpt-6-luna
 ```
 
-Never commit `.env`. It is gitignored. Demo mode works without a key.
+Never commit `.env`. It is gitignored. The app loads `.env` automatically.
+Demo mode works without a key.
 
 ### Run
 

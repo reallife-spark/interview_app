@@ -25,6 +25,7 @@ python3 -m venv .venv
 pip install -r requirements-dev.txt
 cp .env.example .env
 # Add OPENROUTER_API_KEY to .env, or leave it empty for demo mode.
+# The app loads .env automatically; never commit it.
 streamlit run app.py
 ```
 

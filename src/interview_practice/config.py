@@ -59,6 +59,20 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _load_env_file() -> None:
+    """Load a local .env if python-dotenv is available.
+
+    Values are never printed. Tests can bypass this with
+    ``Settings.from_env(load_env_file=False)``.
+    """
+
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv()
+
+
 def _default_provider(has_openrouter_key: bool) -> ProviderName:
     raw = os.getenv("PROVIDER", "").strip().lower()
     if raw in {"demo", "openrouter", "local"}:
@@ -92,7 +106,9 @@ class Settings:
     local_model: str = ""
 
     @classmethod
-    def from_env(cls) -> Settings:
+    def from_env(cls, *, load_env_file: bool = True) -> Settings:
+        if load_env_file:
+            _load_env_file()
         openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
         model = os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
         provider = _default_provider(bool(openrouter_key))

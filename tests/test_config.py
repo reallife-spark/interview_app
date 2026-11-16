@@ -31,7 +31,7 @@ def _clear(monkeypatch) -> None:
 
 def test_defaults_to_demo_without_key(monkeypatch) -> None:
     _clear(monkeypatch)
-    settings = Settings.from_env()
+    settings = Settings.from_env(load_env_file=False)
     assert settings.provider == "demo"
     assert settings.model == DEFAULT_MODEL
     settings.validate()
@@ -40,7 +40,7 @@ def test_defaults_to_demo_without_key(monkeypatch) -> None:
 def test_key_selects_openrouter(monkeypatch) -> None:
     _clear(monkeypatch)
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
-    settings = Settings.from_env()
+    settings = Settings.from_env(load_env_file=False)
     assert settings.provider == "openrouter"
     assert settings.has_openrouter_key
     settings.validate()
