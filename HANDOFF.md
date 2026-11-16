@@ -16,7 +16,7 @@ tags:
 
 - Project: `/mnt/knowledge/AIengin/06_Projects/interview-practice-app/`
 - Private repo: `https://github.com/reallife-spark/interview_app`
-- Pushed: `main` (code tag `v0.1.1`; docs updates follow on `main`)
+- Pushed: `main`; `v0.1.1` is the pre-refactor code tag
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
 - Course alias `rmobil` is a public GitHub user (`Mobil`); the active `gh`
   account is `reallife-spark`.
