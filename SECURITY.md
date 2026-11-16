@@ -36,14 +36,14 @@ browsing, and any offensive-security capability.
 
 | Control | Where | Behaviour |
 |---|---|---|
-| Defensive system prompt | `prompts/defensive.py` | Interview-only scope, data-not-instructions rule, refusal, canary |
+| Defensive system prompt | `prompts/_lib/defensive.py` | Interview-only scope, data-not-instructions rule, refusal, canary |
 | Input length/type validation | `guardrails.py` | Empty or oversized input is blocked |
 | Secret scanner | `guardrails.py` | Common key/token shapes are blocked and redacted |
 | Injection detector | `guardrails.py` | Known override, role-hijack and prompt-extraction patterns |
 | Soft-flag default | `GuardrailPipeline(strict=False)` | Warn and continue |
 | Strict toggle | sidebar | Block the flagged input or output |
 | Canary | `session.py` + output check | Per-session random token; leakage is flagged and redacted |
-| XML data boundaries | `prompts/templates.py` | Job description and answer are escaped inside data tags |
+| XML data boundaries | `prompts/_lib/templates.py` | Job description and answer are escaped inside data tags |
 | JSON parser + schemas | `prompts/schemas.py` | Invalid JSON or missing keys becomes a recoverable error |
 | Call cap | `session.py` | Default 20 calls per session |
 | Cost cap | `session.py` | Default `$0.50` per session |

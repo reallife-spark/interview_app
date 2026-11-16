@@ -16,7 +16,7 @@ The app ships six selectable prompt techniques. The course asks for at least
 five; the evaluation in `EVALUATION.md` compares them on the same cases.
 
 Every call is wrapped in the defensive prompt in
-`src/interview_practice/prompts/defensive.py`. The job description, answer and
+`src/interview_practice/prompts/_lib/defensive.py`. The job description, answer and
 chat messages are escaped and placed inside XML-like data blocks. They are
 **data**, not instructions.
 

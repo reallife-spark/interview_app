@@ -60,14 +60,15 @@ models returned by `/v1/models`.
 
 ```text
 app.py
-  -> interview_practice.ui.layout
-       -> interview_practice.engine
-            -> providers (OpenRouter / local / demo)
-            -> prompts (six techniques + defensive prompt)
-            -> guardrails (secrets, injection, canary)
-            -> tailoring (job-description cap + BM25-lite)
-            -> session (call/cost caps, history, canary)
-            -> schemas (QuestionSet, AnswerEvaluation)
+  -> interview_practice.ui (render_app)
+       -> ui._lib.layout
+            -> interview_practice.engine
+                 -> providers (build_provider + private adapters)
+                 -> prompts (PromptLibrary + private templates)
+                 -> guardrails (secrets, injection, canary)
+                 -> tailoring (job-description cap + BM25-lite)
+                 -> session (call/cost caps, history, canary)
+                 -> schemas (QuestionSet, AnswerEvaluation)
 ```
 
 The engine is independent of Streamlit and is covered by unit tests. The UI is
@@ -78,6 +79,7 @@ covered by `streamlit.testing.v1.AppTest` in demo mode.
 ```text
 app.py
 src/interview_practice/
+  messages.py        neutral ChatMessage type
   config.py          environment and course models
   engine.py          provider + prompt + safety + budget service
   cost.py            model catalog and cost estimates
@@ -85,27 +87,44 @@ src/interview_practice/
   tailoring.py       job-description cap and lexical retrieval
   session.py         session caps and exported history
   evaluation.py      prompt comparison rubric and runners
-  providers/         OpenRouter, local, demo
-  prompts/           defensive prompt, templates, schemas
-  ui/                Streamlit layout
-tests/               unit and AppTest coverage
-scripts/             evaluation and red-team CLIs
+  providers/         build_provider; base contract; _lib adapters; tests
+  prompts/           PromptLibrary; public schemas/techniques; _lib; tests
+  ui/                render_app; _lib layout; tests
+tests/               root-module unit tests
+scripts/             check, evaluation and red-team CLIs
 eval/                demo results and summary
 ```
+
+## Module boundaries
+
+- Root package: `interview_practice`. The project deliberately does **not** use
+  `src/packages/`.
+- `ui` exposes `render_app`; its layout is `ui/_lib/layout.py`.
+- `providers` exposes `build_provider` and the provider contract; concrete
+  adapters are `providers/_lib/`.
+- `prompts` exposes `PromptLibrary` and technique options; templates, catalog
+  and defensive prompt are `prompts/_lib/`; schemas stay public.
+- Tests for those subpackages live under their `tests/` trees and import only
+  the entry point. Root-module tests remain under top-level `tests/`.
+- Import only a subpackage entry point or public root module; never `_lib`.
+- See `src/interview_practice/README.md` for the gate and the proof it bites.
 
 ## Checks
 
 ```bash
-pytest -q
-ruff check .
+./scripts/check.sh
 python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 ```
+
+`scripts/check.sh` runs pytest, Ruff and `PYTHONPATH=src lint-imports`.
 
 Evidence recorded on **2026-11-16** on this host:
 
 - 71 tests pass.
 - Ruff reports 0 findings.
+- 8 import-linter contracts kept; the pass/fail/revert proof is documented in
+  `src/interview_practice/README.md`.
 - Headless Streamlit starts and returns HTTP 200.
 - The offline evaluation runs 18 rows; `json_schema` ranks first in the fixture.
 - Vault `./scripts/validate.sh` passes.
