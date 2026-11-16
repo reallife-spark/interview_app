@@ -18,6 +18,8 @@ tags:
 - Private repo: `https://github.com/reallife-spark/interview_app`
 - Pushed: `main` (code tag `v0.1.1`; docs updates follow on `main`)
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
+- Course alias `rmobil` is a public GitHub user (`Mobil`); the active `gh`
+  account is `reallife-spark`.
 - Checks: 71 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Demo evaluation: 18 rows; `json_schema` ranks first in the offline fixture.
 
@@ -51,12 +53,18 @@ account blindly and do not force-push.
    student-specific repository URL.
 3. If the URL differs from `rmobil-AE.1.5`, update the `course` remote.
 4. Authorize `TuringCollegeSubmissions` if the LMS asks.
-5. Confirm the active GitHub account is the intended one:
+5. Authenticate `gh` as the student account `rmobil` (the alias in the course
+   URL), not `reallife-spark`:
 
    ```bash
+   gh auth login --hostname github.com --git-protocol https
+   # choose "Login with a web browser" and sign in as rmobil
    gh auth status
    gh api user --jq .login
    ```
+
+   The private `interview_app` repo was already pushed as `reallife-spark`; use
+   `rmobil` only for the course push, or switch back after.
 
 6. Re-check access without writing:
 
