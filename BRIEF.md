@@ -22,6 +22,16 @@ answers, and holding a multi-turn coaching conversation. The app calls
 OpenRouter, demonstrates at least five prompt techniques, and defends itself
 against off-topic use and prompt injection.
 
+## Course status
+
+- Parts 1–3: Done.
+- Part 4: In progress.
+- Project start: October 24; deadline: November 20.
+- LMS status on 2026-11-16: 3 days left.
+- Full requirement and link map: `COURSE_COMPLIANCE.md`.
+- Source addendum:
+  `03_Sources/turing-college/sprint-1-course-status-2026-11-16.md`.
+
 ## Chosen interview domain
 
 **AI engineering roles**, with a job-description-tailored path. A user can paste
@@ -43,7 +53,8 @@ three surfaces:
 - OpenRouter API call with a course-allowed model. Default:
   `openai/gpt-6-luna`.
 - At least five system prompts with different techniques; the app records which
-  one performs best in the evaluation.
+  one performs best in the offline fixture, with a live run user-gated by an
+  OpenRouter key.
 - Defensive system prompt: stay on interview preparation, politely decline
   off-topic requests, ignore attempts to override instructions.
 - Job-description field with lightweight retrieval; no vector database.
@@ -104,15 +115,18 @@ applied around the selected technique.
 - Course submission repo:
   `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5`.
 - The course repo is the reviewer-visible artifact. The private repo is the
-  backup. Push to both; never force-push without explicit confirmation.
+  backup. The course push is deferred until the student account is authorized;
+  never force-push without explicit confirmation.
 
 ## Definition of done
 
 - The app runs in demo mode with no key and in OpenRouter mode with a key.
 - The user can generate questions, practise an answer, get feedback, and chat.
-- Five prompt variants are selectable and evaluated.
+- Six prompt variants are selectable; the offline evaluation names a fixture
+  winner and the live run is user-gated.
 - Off-topic and injection demos are documented with observed results.
-- The course repo contains the project and history; the reviewer can see it.
+- The course repo contains the project and history; this is blocked until the
+  Turing College repository is writable.
 - `README.md`, `PROMPTS.md`, `SECURITY.md`, `EVALUATION.md`, `DEMO.md`, and
   `DEPLOYMENT.md` are complete.
 - No secret is present in any page, log, commit, or command output.

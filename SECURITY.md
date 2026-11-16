@@ -80,8 +80,8 @@ proof of a broader compromise. Rotate the token by clearing the session.
 - The OpenRouter key comes from environment or Streamlit secrets.
 - `.env` is gitignored; `.env.example` has placeholders only.
 - The app never reads or echoes `.env` in the UI.
-- `SecretScanner` blocks common shapes, including OpenRouter, OpenAI and
-  GitHub tokens, bearer tokens and credential assignments.
+- The private secret scanner blocks common shapes, including OpenRouter, OpenAI
+  and GitHub tokens, bearer tokens and credential assignments.
 - The scanner is a layer, not a complete data-loss-prevention product.
 
 ## OWASP LLM Top 10 mapping
