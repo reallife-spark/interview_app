@@ -18,7 +18,7 @@ from pathlib import Path
 from interview_practice.config import COURSE_MODELS, Settings
 from interview_practice.cost import default_catalog
 from interview_practice.engine import EngineError, InterviewEngine
-from interview_practice.prompts import TECHNIQUE_ORDER
+from interview_practice.prompts import PROMPT_VERSION, TECHNIQUE_ORDER
 from interview_practice.prompts.schemas import QuestionSet
 from interview_practice.providers.base import Completion, CompletionRequest
 from interview_practice.session import SessionState
@@ -39,6 +39,7 @@ class EvalCase:
     job_description: str
     difficulty: str
     count: int
+    expected_concepts: tuple[str, ...] = ()
 
 
 CASES: tuple[EvalCase, ...] = (
@@ -51,6 +52,13 @@ CASES: tuple[EvalCase, ...] = (
         ),
         difficulty="medium",
         count=3,
+        expected_concepts=(
+            "retrieval",
+            "grounding",
+            "latency",
+            "cost",
+            "regression",
+        ),
     ),
     EvalCase(
         id="behavioural",
@@ -61,6 +69,12 @@ CASES: tuple[EvalCase, ...] = (
         ),
         difficulty="medium",
         count=3,
+        expected_concepts=(
+            "trade-off",
+            "feedback",
+            "stakeholder",
+            "ambiguity",
+        ),
     ),
     EvalCase(
         id="system_design",
@@ -71,6 +85,13 @@ CASES: tuple[EvalCase, ...] = (
         ),
         difficulty="hard",
         count=3,
+        expected_concepts=(
+            "versioning",
+            "safety",
+            "cost",
+            "rollback",
+            "evaluation",
+        ),
     ),
 )
 
@@ -83,6 +104,8 @@ class EvalScore:
     difficulty_match: float
     question_length: float
     count_match: float
+    concept_coverage: float
+    shape_score: float
     score: float
     notes: str
 
@@ -99,8 +122,11 @@ class EvalRow:
     difficulty_match: float
     question_length: float
     count_match: float
+    concept_coverage: float
+    shape_score: float
     score: float
     cost_usd: float | None
+    prompt_version: str
     notes: str
 
 
@@ -109,8 +135,13 @@ class ScriptedProvider:
 
     name = "demo"
 
-    def __init__(self, technique: str) -> None:
+    def __init__(
+        self,
+        technique: str,
+        expected_concepts: tuple[str, ...] = (),
+    ) -> None:
         self.technique = technique
+        self.expected_concepts = expected_concepts
         self.calls = 0
 
     def list_models(self) -> list[str]:
@@ -121,7 +152,12 @@ class ScriptedProvider:
         prompt = request.messages[-1].content if request.messages else ""
         difficulty = _tag(prompt, "Difficulty") or "medium"
         role = _tag(prompt, "Role") or "AI engineer"
-        text = _fixture(self.technique, role=role, difficulty=difficulty)
+        text = _fixture(
+            self.technique,
+            role=role,
+            difficulty=difficulty,
+            expected_concepts=self.expected_concepts,
+        )
         return Completion(
             text=text,
             model="scripted/interview-fixture",
@@ -141,7 +177,18 @@ def score_questions(
 ) -> EvalScore:
     count = len(question_set.questions)
     if count == 0:
-        return EvalScore(False, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, "empty question set")
+        return EvalScore(
+            valid=False,
+            coverage=0.0,
+            specificity=0.0,
+            difficulty_match=0.0,
+            question_length=0.0,
+            count_match=0.0,
+            concept_coverage=0.0,
+            shape_score=0.0,
+            score=0.0,
+            notes="empty question set",
+        )
     categories = {question.category for question in question_set.questions}
     coverage = min(len(categories & CATEGORY_WEIGHT), 4) / 4
     specificity = sum(
@@ -158,13 +205,28 @@ def score_questions(
         for question in question_set.questions
     ) / count
     count_match = 1.0 if count == case.count else 0.0
-    score = 10 * (
+    shape_score = 10 * (
         0.30 * coverage
         + 0.30 * specificity
         + 0.15 * difficulty_match
         + 0.15 * question_length
         + 0.10 * count_match
     )
+    searchable = " ".join(
+        question.question
+        + " "
+        + question.why
+        + " "
+        + " ".join(question.answer_points)
+        for question in question_set.questions
+    ).lower()
+    expected = case.expected_concepts
+    if expected:
+        hits = sum(1 for concept in expected if concept.lower() in searchable)
+        concept_coverage = hits / len(expected)
+    else:
+        concept_coverage = 1.0
+    score = 0.5 * shape_score + 0.5 * concept_coverage * 10
     return EvalScore(
         valid=True,
         coverage=coverage,
@@ -172,6 +234,8 @@ def score_questions(
         difficulty_match=difficulty_match,
         question_length=question_length,
         count_match=count_match,
+        concept_coverage=concept_coverage,
+        shape_score=round(shape_score, 2),
         score=round(score, 2),
         notes="parsed",
     )
@@ -180,18 +244,21 @@ def score_questions(
 def run_demo() -> list[EvalRow]:
     rows: list[EvalRow] = []
     for technique in TECHNIQUE_ORDER:
-        engine = InterviewEngine(
-            Settings(
-                provider="demo",
-                max_calls=50,
-                max_tokens=350,
-                max_output_tokens=350,
-            ),
-            provider=ScriptedProvider(technique),
-            session=SessionState(),
-            catalog=default_catalog(),
-        )
         for case in CASES:
+            engine = InterviewEngine(
+                Settings(
+                    provider="demo",
+                    max_calls=50,
+                    max_tokens=350,
+                    max_output_tokens=350,
+                ),
+                provider=ScriptedProvider(
+                    technique,
+                    expected_concepts=case.expected_concepts,
+                ),
+                session=SessionState(),
+                catalog=default_catalog(),
+            )
             try:
                 result = engine.generate_questions(
                     role=case.role,
@@ -282,7 +349,9 @@ def write_results(rows: list[EvalRow], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(asdict(rows[0]).keys()) if rows else []
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(
+            handle, fieldnames=fieldnames, lineterminator="\n"
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(asdict(row))
@@ -318,6 +387,7 @@ def write_summary(
         f"- Model: **{model}**",
         f"- Cases: **{len(CASES)}** per technique",
         f"- Techniques: **{len(TECHNIQUE_ORDER)}**",
+        f"- Prompt version: **{PROMPT_VERSION}**",
         "",
         "## Ranking",
         "",
@@ -335,10 +405,11 @@ def write_summary(
             "",
             "Each technique generated a question set for three cases: RAG evaluation,",
             "behavioural collaboration, and a senior system-design prompt. The",
-            "deterministic rubric weights coverage (30%), answer-point specificity",
-            "(30%), difficulty match (15%), question length (15%) and requested",
-            "count (10%). The score is a pipeline and shape check, not a claim about",
-            "the model's general quality.",
+            "score is 50% shape and 50% expected-concept coverage. Shape weights",
+            "category coverage (30%), answer-point specificity (30%), difficulty",
+            "match (15%), question length (15%) and requested count (10%). This is",
+            "a pipeline and content-coverage check, not a claim about the model's",
+            "general quality.",
             "",
         ]
     )
@@ -389,8 +460,11 @@ def _row(
         difficulty_match=score.difficulty_match,
         question_length=round(score.question_length, 3),
         count_match=score.count_match,
+        concept_coverage=round(score.concept_coverage, 3),
+        shape_score=score.shape_score,
         score=score.score,
         cost_usd=cost,
+        prompt_version=PROMPT_VERSION,
         notes=score.notes,
     )
 
@@ -413,8 +487,11 @@ def _invalid_row(
         difficulty_match=0.0,
         question_length=0.0,
         count_match=0.0,
+        concept_coverage=0.0,
+        shape_score=0.0,
         score=0.0,
         cost_usd=None,
+        prompt_version=PROMPT_VERSION,
         notes=note[:160],
     )
 
@@ -424,7 +501,13 @@ def _tag(prompt: str, tag: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
-def _fixture(technique: str, *, role: str, difficulty: str) -> str:
+def _fixture(
+    technique: str,
+    *,
+    role: str,
+    difficulty: str,
+    expected_concepts: tuple[str, ...] = (),
+) -> str:
     categories = {
         "zero_shot": ("technical", "technical", "closing"),
         "role_persona": ("technical", "behavioural", "system-design"),
@@ -448,10 +531,21 @@ def _fixture(technique: str, *, role: str, difficulty: str) -> str:
         "role-specific": "Which AI-engineering trade-off would you prioritise first?",
         "closing": "What questions would you ask the hiring team at the end?",
     }
+    concept_count = {
+        "zero_shot": 2,
+        "role_persona": 4,
+        "few_shot": 4,
+        "cot": 4,
+        "json_schema": 5,
+        "chained": 3,
+    }.get(technique, 2)
+    selected_concepts = expected_concepts[:concept_count]
     why = (
         "This case tests a concrete interview skill and gives the candidate a "
         "specific area to practise."
     )
+    if selected_concepts:
+        why += " Competencies: " + ", ".join(selected_concepts) + "."
     questions = []
     for index, category in enumerate(categories, start=1):
         questions.append(

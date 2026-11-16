@@ -12,12 +12,13 @@ from interview_practice.prompts.personas import (
     PERSONA_ORDER,
     Persona,
 )
-from interview_practice.prompts.techniques import Technique
+from interview_practice.prompts.techniques import PROMPT_VERSION, Technique
 
 __all__ = [
     "DEFAULT_PERSONA",
     "DEFAULT_TECHNIQUE",
     "PERSONA_ORDER",
+    "PROMPT_VERSION",
     "Persona",
     "PromptLibrary",
     "TECHNIQUE_ORDER",

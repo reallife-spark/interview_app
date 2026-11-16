@@ -35,11 +35,20 @@ def _question_set(count: int = 3, difficulty: str = "medium") -> QuestionSet:
 
 
 def test_score_questions_rewards_shape() -> None:
-    case = EvalCase("x", "AI engineer", "jd", "medium", 3)
+    case = EvalCase(
+        "x",
+        "AI engineer",
+        "jd",
+        "medium",
+        3,
+        expected_concepts=("retrieval", "groundedness"),
+    )
     score = score_questions(_question_set(), case)
     assert score.valid
     assert score.score > 8.0
     assert score.coverage == 0.75
+    assert score.concept_coverage == 1.0
+    assert score.shape_score > 8.0
 
 
 def test_score_questions_rejects_empty_set() -> None:

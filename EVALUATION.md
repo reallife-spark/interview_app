@@ -1,6 +1,6 @@
 ---
 title: Prompt evaluation — Interview Practice App
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - 06_Projects/interview-practice-app/PROMPTS.md
   - eval/results.csv
@@ -22,34 +22,32 @@ the same three interview-preparation cases?
 
 Each technique is run on:
 
-1. **RAG evaluation** — an AI engineer must evaluate retrieval quality,
-   grounding, latency, cost and regression gates.
-2. **Behavioural collaboration** — an AI engineer must explain trade-offs,
-   handle ambiguity and improve the team's evaluation practice.
-3. **Senior system design** — design a prompt-evaluation pipeline with
-   versioning, safety, cost and rollback.
+1. **RAG evaluation** — retrieval, grounding, latency, cost and regression
+   gates.
+2. **Behavioural collaboration** — trade-offs, feedback, stakeholder context
+   and ambiguity.
+3. **Senior system design** — versioning, safety, cost, rollback and
+   evaluation.
 
-Every case requests three questions at a fixed difficulty.
+Every case requests three questions at a fixed difficulty. Each case also names
+expected concepts that a useful question set should cover.
 
 ## Rubric
 
-The deterministic rubric scores each question set out of 10:
+The score is a combination of two axes:
 
-| Component | Weight | Check |
-|---|---:|---|
-| Coverage | 30% | Distinct categories among technical, behavioural, system-design, role-specific and closing; four categories score full marks |
-| Specificity | 30% | Average answer points per question, capped at three |
-| Difficulty match | 15% | Every question matches the requested difficulty |
-| Question length | 15% | Every question is at least 40 characters |
-| Count match | 10% | The requested number of questions is present |
+- **Shape (50%)** — category coverage (30%), answer-point specificity (30%),
+  difficulty match (15%), question length (15%) and requested count (10%).
+- **Concept coverage (50%)** — how many of the case's expected concepts appear
+  in the questions, rationale or answer points.
 
-This is a **shape and pipeline** check. It does not measure whether a question
-would impress a human interviewer. A live run can be inspected manually; an
-LLM judge is deliberately out of scope for the selected bonus tasks.
+The score is out of 10. It checks structure and expected-content coverage, not
+whether a human interviewer would rate the question highly. A live run can be
+inspected manually; an LLM judge is not used as ground truth.
 
 ## Offline demo result
 
-Command:
+Prompt version: **2026-11-16**. Command:
 
 ```bash
 python scripts/evaluate_prompts.py --demo
@@ -59,45 +57,45 @@ Outputs: `eval/results.csv`, `eval/summary.md`.
 
 | Rank | Technique | Average / 10 |
 |---:|---|---:|
-| 1 | `json_schema` | 9.25 |
-| 2 | `role_persona` | 8.25 |
-| 3 | `few_shot` | 8.25 |
-| 4 | `cot` | 8.25 |
-| 5 | `chained` | 8.25 |
-| 6 | `zero_shot` | 6.50 |
+| 1 | `json_schema` | 9.62 |
+| 2 | `role_persona` | 8.79 |
+| 3 | `few_shot` | 8.79 |
+| 4 | `cot` | 8.79 |
+| 5 | `chained` | 7.37 |
+| 6 | `zero_shot` | 5.42 |
 
 **Best in the offline fixture:** `json_schema`.
 
-This is **not** a live model-quality result. The offline run uses a deterministic
-scripted provider so the parser, guardrails, budget and scoring path can be
-tested without a key. The fixture gives the schema variant more categories and
-answer points by design; it proves the harness runs, not that the live model
-behaves the same way.
+This is **not** a live model-quality result. The offline run uses a
+deterministic scripted provider so the parser, guardrails, budget and scoring
+path can be tested without a key. The fixture deliberately gives the schema
+variant more expected concepts and answer points; it proves the harness and
+rubric run, not that the live model behaves the same way.
 
 ## Live run
 
-With an OpenRouter key available in the environment:
+With an OpenRouter key available:
 
 ```bash
 python scripts/evaluate_prompts.py --live --model openai/gpt-6-luna
 ```
 
 Outputs are written to `eval/results.live.csv` and `eval/summary.live.md`.
-They are gitignored. A live result must record its model, date and actual rows;
-it is a small sample, not a general benchmark.
+They are gitignored. A live result must record its model, date, prompt version
+and actual rows; it is a small sample, not a general benchmark. No live key was
+available for this run.
 
 ## Interpretation
 
 - Use `json_schema` as the default because it gives the parser a stable shape.
-- Keep `role_persona`, `few_shot`, `cot` and `chained` selectable for review
-  demos and for comparing prompt styles.
+- Keep the other techniques selectable for comparison and review demos.
 - Treat `zero_shot` as the baseline, not the production default.
-- Re-run the live evaluation before making a quantitative claim; the offline
-  table is a fixture result.
+- Re-run the live evaluation before making a quantitative claim.
 
 ## Limits
 
 - Three cases is a small sample.
-- The rubric rewards structure and specificity, not factual correctness.
+- Concept coverage is lexical, not semantic judgment.
+- The rubric does not measure factual correctness or interview quality.
 - The scripted demo cannot reveal model-specific behavior.
 - A live run may be limited by budget, model availability and latency.

@@ -25,11 +25,15 @@ from interview_practice.prompts._lib.templates import (
     question_set_messages,
 )
 from interview_practice.prompts.personas import Persona
-from interview_practice.prompts.techniques import Technique
+from interview_practice.prompts.techniques import PROMPT_VERSION, Technique
 
 
 class PromptLibrary:
     """Small interface over the prompt techniques and message builders."""
+
+    @property
+    def version(self) -> str:
+        return PROMPT_VERSION
 
     @property
     def default_technique(self) -> str:

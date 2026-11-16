@@ -174,7 +174,8 @@ app does not invent a result.
 2. A behavioural question about changing a design.
 3. A system-design question about a prompt-evaluation pipeline.
 
-Each result is scored on the 10-point rubric in `EVALUATION.md`: coverage
-(30%), answer-point specificity (30%), difficulty match (15%), question length
-(15%) and requested count (10%). The winner is recorded in `EVALUATION.md`.
-The offline demo run is a fixture test, not a live model-quality claim.
+Each result is scored on the 10-point rubric in `EVALUATION.md`: 50% shape
+(coverage 30%, answer-point specificity 30%, difficulty 15%, length 15%, count
+10%) and 50% expected-concept coverage. The prompt version is recorded with the
+results. The winner is recorded in `EVALUATION.md`; the offline demo run is a
+fixture test, not a live model-quality claim.
