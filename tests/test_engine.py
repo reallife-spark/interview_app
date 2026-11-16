@@ -1,13 +1,12 @@
 import json
-from collections.abc import Sequence
-from typing import Any
 
 import pytest
 
 from interview_practice.config import Settings
 from interview_practice.cost import ModelCatalog, ModelInfo
 from interview_practice.engine import EngineError, InterviewEngine
-from interview_practice.providers.base import ChatMessage, Completion
+from interview_practice.messages import ChatMessage
+from interview_practice.providers.base import Completion, CompletionRequest
 
 QUESTION_JSON = json.dumps(
     {
@@ -47,18 +46,8 @@ class StaticProvider:
     def list_models(self) -> list[str]:
         return ["fake/model"]
 
-    def complete(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        model: str,
-        temperature: float,
-        max_tokens: int,
-        top_p: float,
-        reasoning_effort: str | None = None,
-        response_format: dict[str, Any] | None = None,
-    ) -> Completion:
-        self.last_messages = list(messages)
+    def complete(self, request: CompletionRequest) -> Completion:
+        self.last_messages = list(request.messages)
         text = self.replies[min(self.calls, len(self.replies) - 1)]
         self.calls += 1
         return Completion(

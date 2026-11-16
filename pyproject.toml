@@ -62,6 +62,26 @@ allowed_importers = [
 ]
 
 [[tool.importlinter.contracts]]
+name = "providers internals are private"
+type = "protected"
+protected_modules = ["interview_practice.providers._lib"]
+allowed_importers = [
+  "interview_practice.providers",
+  "interview_practice.providers.*",
+  "interview_practice.providers.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "providers tests are private"
+type = "protected"
+protected_modules = ["interview_practice.providers.tests"]
+allowed_importers = [
+  "interview_practice.providers.tests",
+  "interview_practice.providers.tests.*",
+  "interview_practice.providers.tests.**",
+]
+
+[[tool.importlinter.contracts]]
 name = "tests never import implementation"
 type = "forbidden"
 source_modules = ["interview_practice.*.tests"]

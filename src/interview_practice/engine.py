@@ -14,6 +14,7 @@ from interview_practice.cost import (
     fetch_model_catalog,
 )
 from interview_practice.guardrails import GuardrailPipeline, GuardrailResult
+from interview_practice.messages import ChatMessage
 from interview_practice.prompts.schemas import (
     AnswerEvaluation,
     QuestionSet,
@@ -31,8 +32,8 @@ from interview_practice.prompts.templates import (
 )
 from interview_practice.providers import build_provider
 from interview_practice.providers.base import (
-    ChatMessage,
     Completion,
+    CompletionRequest,
     Provider,
     ProviderError,
 )
@@ -295,20 +296,21 @@ class InterviewEngine:
         else:
             model = self.settings.model
         max_tokens = min(self.settings.max_tokens, self.settings.max_output_tokens)
+        request = CompletionRequest(
+            messages=messages,
+            model=model,
+            temperature=self.settings.temperature,
+            max_tokens=max_tokens,
+            top_p=self.settings.top_p,
+            reasoning_effort=(
+                self.settings.reasoning_effort
+                if self.settings.provider == "openrouter"
+                else None
+            ),
+            response_format=response_format,
+        )
         try:
-            completion = self.provider.complete(
-                messages,
-                model=model,
-                temperature=self.settings.temperature,
-                max_tokens=max_tokens,
-                top_p=self.settings.top_p,
-                reasoning_effort=(
-                    self.settings.reasoning_effort
-                    if self.settings.provider == "openrouter"
-                    else None
-                ),
-                response_format=response_format,
-            )
+            completion = self.provider.complete(request)
         except ProviderError as exc:
             raise EngineError(str(exc)) from exc
         model_info = self.catalog.get(completion.model) or self.catalog.get(model)

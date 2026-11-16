@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from interview_practice.messages import ChatMessage
 from interview_practice.prompts.defensive import defensive_system_prompt
 from interview_practice.prompts.schemas import (
     SchemaError,
@@ -19,7 +20,6 @@ from interview_practice.prompts.templates import (
     chat_messages,
     question_set_messages,
 )
-from interview_practice.providers.base import ChatMessage
 
 
 def test_six_unique_techniques() -> None:

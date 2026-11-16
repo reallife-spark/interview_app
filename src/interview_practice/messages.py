@@ -1,0 +1,17 @@
+"""Neutral chat-message types shared by prompts, providers and sessions."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Literal
+
+Role = Literal["system", "user", "assistant"]
+
+
+@dataclass(frozen=True, slots=True)
+class ChatMessage:
+    role: Role
+    content: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {"role": self.role, "content": self.content}

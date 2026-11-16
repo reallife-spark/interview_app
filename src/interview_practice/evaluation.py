@@ -14,14 +14,13 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any
 
 from interview_practice.config import COURSE_MODELS, Settings
 from interview_practice.cost import default_catalog
 from interview_practice.engine import EngineError, InterviewEngine
 from interview_practice.prompts.schemas import QuestionSet
 from interview_practice.prompts.templates import TECHNIQUE_ORDER
-from interview_practice.providers.base import ChatMessage, Completion
+from interview_practice.providers.base import Completion, CompletionRequest
 from interview_practice.session import SessionState
 
 CATEGORY_WEIGHT = {
@@ -117,19 +116,9 @@ class ScriptedProvider:
     def list_models(self) -> list[str]:
         return ["scripted/interview-fixture"]
 
-    def complete(
-        self,
-        messages: list[ChatMessage],
-        *,
-        model: str,
-        temperature: float,
-        max_tokens: int,
-        top_p: float,
-        reasoning_effort: str | None = None,
-        response_format: dict[str, Any] | None = None,
-    ) -> Completion:
+    def complete(self, request: CompletionRequest) -> Completion:
         self.calls += 1
-        prompt = messages[-1].content if messages else ""
+        prompt = request.messages[-1].content if request.messages else ""
         difficulty = _tag(prompt, "Difficulty") or "medium"
         role = _tag(prompt, "Role") or "AI engineer"
         text = _fixture(self.technique, role=role, difficulty=difficulty)

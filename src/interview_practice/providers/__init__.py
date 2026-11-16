@@ -2,34 +2,45 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from interview_practice.config import ProviderName, Settings
+from interview_practice.providers._lib.demo import DemoProvider
+from interview_practice.providers._lib.local import OpenAILocalProvider
+from interview_practice.providers._lib.openrouter import OpenRouterProvider
 from interview_practice.providers.base import (
-    ChatMessage,
     Completion,
+    CompletionRequest,
     Provider,
     ProviderError,
 )
-from interview_practice.providers.demo import DEMO_MODEL, DemoProvider
-from interview_practice.providers.local import OpenAILocalProvider
-from interview_practice.providers.openrouter import OpenRouterProvider
 
 PROVIDER_NAMES: tuple[ProviderName, ...] = ("demo", "openrouter", "local")
 
 
-def build_provider(settings: Settings) -> Provider:
+def build_provider(
+    settings: Settings,
+    *,
+    session: Any | None = None,
+) -> Provider:
     """Return the explicitly selected provider.
 
-    A failure in local mode never falls back to OpenRouter: a private job
-    description must not leave the machine because a tunnel is down.
+    ``session`` is an injectable HTTP transport for adapter tests. A failure in
+    local mode never falls back to OpenRouter: a private job description must
+    not leave the machine because a tunnel is down.
     """
 
     if settings.provider == "openrouter":
-        return OpenRouterProvider(settings.openrouter_api_key)
+        return OpenRouterProvider(
+            settings.openrouter_api_key,
+            session=session,
+        )
     if settings.provider == "local":
         return OpenAILocalProvider(
             settings.local_base_url,
             api_key=settings.local_api_key,
             default_model=settings.local_model,
+            session=session,
         )
     if settings.provider == "demo":
         return DemoProvider()
@@ -37,12 +48,8 @@ def build_provider(settings: Settings) -> Provider:
 
 
 __all__ = [
-    "ChatMessage",
     "Completion",
-    "DEMO_MODEL",
-    "DemoProvider",
-    "OpenAILocalProvider",
-    "OpenRouterProvider",
+    "CompletionRequest",
     "PROVIDER_NAMES",
     "Provider",
     "ProviderError",

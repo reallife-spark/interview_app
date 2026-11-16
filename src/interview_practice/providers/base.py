@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol
+from typing import Any, Protocol
 
-Role = Literal["system", "user", "assistant"]
+from interview_practice.messages import ChatMessage
 
 
 class ProviderError(RuntimeError):
@@ -18,12 +18,16 @@ class ProviderError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
-class ChatMessage:
-    role: Role
-    content: str
+class CompletionRequest:
+    """One non-streaming completion request at the provider seam."""
 
-    def as_dict(self) -> dict[str, str]:
-        return {"role": self.role, "content": self.content}
+    messages: Sequence[ChatMessage]
+    model: str
+    temperature: float
+    max_tokens: int
+    top_p: float
+    reasoning_effort: str | None = None
+    response_format: Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,15 +49,5 @@ class Provider(Protocol):
     def list_models(self) -> list[str]:
         """Return the model IDs this provider currently exposes."""
 
-    def complete(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        model: str,
-        temperature: float,
-        max_tokens: int,
-        top_p: float,
-        reasoning_effort: str | None = None,
-        response_format: dict[str, Any] | None = None,
-    ) -> Completion:
+    def complete(self, request: CompletionRequest) -> Completion:
         """Run one non-streaming completion."""

@@ -3,11 +3,12 @@ import json
 import pytest
 
 from interview_practice.config import Settings
-from interview_practice.providers import build_provider
-from interview_practice.providers.base import ChatMessage, ProviderError
-from interview_practice.providers.demo import DemoProvider
-from interview_practice.providers.local import OpenAILocalProvider
-from interview_practice.providers.openrouter import OpenRouterProvider
+from interview_practice.messages import ChatMessage
+from interview_practice.providers import (
+    CompletionRequest,
+    ProviderError,
+    build_provider,
+)
 
 
 class FakeResponse:
@@ -39,9 +40,25 @@ class FakeSession:
         return self.post_response
 
 
+def _request(**overrides) -> CompletionRequest:
+    values = {
+        "messages": (ChatMessage("user", "u"),),
+        "model": "openai/gpt-6-luna",
+        "temperature": 0.7,
+        "max_tokens": 50,
+        "top_p": 1.0,
+    }
+    values.update(overrides)
+    return CompletionRequest(**values)
+
+
+def _openrouter_settings() -> Settings:
+    return Settings(provider="openrouter", openrouter_api_key="test-key")
+
+
 def test_openrouter_requires_key() -> None:
     with pytest.raises(ProviderError, match="OPENROUTER_API_KEY"):
-        OpenRouterProvider("")
+        build_provider(Settings(provider="openrouter", openrouter_api_key=""))
 
 
 def test_openrouter_complete_shapes_request_and_parses_usage() -> None:
@@ -63,15 +80,20 @@ def test_openrouter_complete_shapes_request_and_parses_usage() -> None:
         }
     )
     session = FakeSession(post_response=response)
-    provider = OpenRouterProvider("test-key", session=session)
+    provider = build_provider(_openrouter_settings(), session=session)
     completion = provider.complete(
-        [ChatMessage("system", "s"), ChatMessage("user", "u")],
-        model="openai/gpt-6-luna",
-        temperature=0.3,
-        max_tokens=200,
-        top_p=0.9,
-        reasoning_effort="low",
-        response_format={"type": "json_object"},
+        CompletionRequest(
+            messages=(
+                ChatMessage("system", "s"),
+                ChatMessage("user", "u"),
+            ),
+            model="openai/gpt-6-luna",
+            temperature=0.3,
+            max_tokens=200,
+            top_p=0.9,
+            reasoning_effort="low",
+            response_format={"type": "json_object"},
+        )
     )
     assert completion.text == "Hello"
     assert completion.prompt_tokens == 12
@@ -91,27 +113,19 @@ def test_openrouter_complete_shapes_request_and_parses_usage() -> None:
 
 
 def test_openrouter_http_error_is_safe() -> None:
-    provider = OpenRouterProvider(
-        "test-key",
+    provider = build_provider(
+        _openrouter_settings(),
         session=FakeSession(post_response=FakeResponse({}, status_code=429)),
     )
     with pytest.raises(ProviderError, match="429"):
-        provider.complete(
-            [ChatMessage("user", "u")],
-            model="openai/gpt-6-luna",
-            temperature=0.7,
-            max_tokens=50,
-            top_p=1.0,
-        )
+        provider.complete(_request())
 
 
 def test_openrouter_lists_models() -> None:
-    provider = OpenRouterProvider(
-        "test-key",
+    provider = build_provider(
+        _openrouter_settings(),
         session=FakeSession(
-            get_response=FakeResponse(
-                {"data": [{"id": "b/model"}, {"id": "a/model"}]}
-            )
+            get_response=FakeResponse({"data": [{"id": "b/model"}, {"id": "a/model"}]})
         ),
     )
     assert provider.list_models() == ["a/model", "b/model"]
@@ -128,28 +142,28 @@ def test_local_provider_autodetects_model_and_has_no_cost() -> None:
             }
         ),
     )
-    provider = OpenAILocalProvider("http://127.0.0.1:21464/v1", session=session)
-    assert provider.list_models() == ["qwen-local"]
-    completion = provider.complete(
-        [ChatMessage("user", "u")],
-        model="",
-        temperature=0.7,
-        max_tokens=50,
-        top_p=1.0,
+    provider = build_provider(
+        Settings(
+            provider="local",
+            local_base_url="http://127.0.0.1:21464/v1",
+        ),
+        session=session,
     )
+    assert provider.list_models() == ["qwen-local"]
+    completion = provider.complete(_request(model=""))
     assert completion.text == "local answer"
     assert completion.cost_usd == 0.0
     assert session.last_post[1]["json"]["model"] == "qwen-local"
 
 
 def test_demo_provider_returns_question_json() -> None:
-    provider = DemoProvider()
+    provider = build_provider(Settings(provider="demo"))
     completion = provider.complete(
-        [ChatMessage("user", "Generate a QuestionSet for an AI engineer")],
-        model="demo/interview-coach",
-        temperature=0.7,
-        max_tokens=400,
-        top_p=1.0,
+        _request(
+            messages=(
+                ChatMessage("user", "Generate a QuestionSet for an AI engineer"),
+            )
+        )
     )
     payload = json.loads(completion.text)
     assert payload["role"] == "AI engineer"
@@ -158,13 +172,13 @@ def test_demo_provider_returns_question_json() -> None:
 
 
 def test_demo_provider_returns_evaluation_json() -> None:
-    provider = DemoProvider()
+    provider = build_provider(Settings(provider="demo"))
     completion = provider.complete(
-        [ChatMessage("user", "Evaluate this answer and return AnswerEvaluation")],
-        model="demo/interview-coach",
-        temperature=0.7,
-        max_tokens=400,
-        top_p=1.0,
+        _request(
+            messages=(
+                ChatMessage("user", "Evaluate this answer and return AnswerEvaluation"),
+            )
+        )
     )
     payload = json.loads(completion.text)
     assert 0 <= payload["score"] <= 100
@@ -179,4 +193,5 @@ def test_factory_does_not_fallback_from_local() -> None:
 
 def test_factory_returns_demo() -> None:
     provider = build_provider(Settings(provider="demo"))
-    assert isinstance(provider, DemoProvider)
+    assert provider.name == "demo"
+    assert provider.list_models() == ["demo/interview-coach"]

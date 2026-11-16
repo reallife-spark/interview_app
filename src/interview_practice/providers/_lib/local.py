@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Sequence
 from typing import Any
 
 import requests
 
 from interview_practice.config import LOCAL_BASE_URL
 from interview_practice.providers.base import (
-    ChatMessage,
     Completion,
+    CompletionRequest,
     ProviderError,
 )
 
@@ -65,18 +64,8 @@ class OpenAILocalProvider:
                 models.append(item["id"])
         return sorted(models)
 
-    def complete(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        model: str,
-        temperature: float,
-        max_tokens: int,
-        top_p: float,
-        reasoning_effort: str | None = None,
-        response_format: dict[str, Any] | None = None,
-    ) -> Completion:
-        chosen_model = model or self._default_model
+    def complete(self, request: CompletionRequest) -> Completion:
+        chosen_model = request.model or self._default_model
         if not chosen_model:
             available = self.list_models()
             if not available:
@@ -85,13 +74,13 @@ class OpenAILocalProvider:
 
         payload: dict[str, Any] = {
             "model": chosen_model,
-            "messages": [message.as_dict() for message in messages],
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "top_p": top_p,
+            "messages": [message.as_dict() for message in request.messages],
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
+            "top_p": request.top_p,
         }
-        if response_format:
-            payload["response_format"] = response_format
+        if request.response_format:
+            payload["response_format"] = request.response_format
 
         started = time.monotonic()
         try:

@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
-from typing import Any
 
-from interview_practice.providers.base import ChatMessage, Completion
+from interview_practice.providers.base import Completion, CompletionRequest
 
 DEMO_MODEL = "demo/interview-coach"
 
@@ -17,18 +15,8 @@ class DemoProvider:
     def list_models(self) -> list[str]:
         return [DEMO_MODEL]
 
-    def complete(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        model: str = DEMO_MODEL,
-        temperature: float = 0.7,
-        max_tokens: int = 400,
-        top_p: float = 1.0,
-        reasoning_effort: str | None = None,
-        response_format: dict[str, Any] | None = None,
-    ) -> Completion:
-        prompt = "\n".join(message.content for message in messages)
+    def complete(self, request: CompletionRequest) -> Completion:
+        prompt = "\n".join(message.content for message in request.messages)
         lowered = prompt.lower()
         if "questionset" in lowered or (
             "question" in lowered and "generate" in lowered

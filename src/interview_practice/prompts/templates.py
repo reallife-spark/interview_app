@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from html import escape
 from textwrap import dedent
 
+from interview_practice.messages import ChatMessage
 from interview_practice.prompts.defensive import defensive_system_prompt
-from interview_practice.providers.base import ChatMessage
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,8 +6,9 @@ import secrets
 from dataclasses import dataclass, field
 
 from interview_practice.config import Settings
+from interview_practice.messages import ChatMessage
 from interview_practice.prompts.schemas import AnswerEvaluation, QuestionSet
-from interview_practice.providers.base import ChatMessage, Completion
+from interview_practice.providers.base import Completion
 
 
 def new_canary() -> str:
