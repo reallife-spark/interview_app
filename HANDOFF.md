@@ -16,7 +16,7 @@ tags:
 
 - Project: `/mnt/knowledge/AIengin/06_Projects/interview-practice-app/`
 - Private repo: `https://github.com/reallife-spark/interview_app`
-- Pushed commit: `730a934` (`docs: add security, demo and deployment guides`)
+- Pushed: `main` at tag `v0.1.0`
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
 - Checks: 69 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Demo evaluation: 18 rows; `json_schema` ranks first in the offline fixture.
