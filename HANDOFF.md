@@ -16,7 +16,7 @@ tags:
 
 - Project: `/mnt/knowledge/AIengin/06_Projects/interview-practice-app/`
 - Private repo: `https://github.com/reallife-spark/interview_app`
-- Pushed: `main` at tag `v0.1.1`
+- Pushed: `main` (code tag `v0.1.1`; docs updates follow on `main`)
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
 - Checks: 71 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Demo evaluation: 18 rows; `json_schema` ranks first in the offline fixture.
@@ -31,8 +31,18 @@ fatal: unable to access 'https://github.com/TuringCollegeSubmissions/rmobil-AE.1
 ```
 
 `gh repo view TuringCollegeSubmissions/rmobil-AE.1.5` cannot resolve the
-repository. The private `interview_app` repo is pushed, but the course mirror is
-not. Do not push to a different account and do not force-push.
+repository. Re-checked on 2026-11-16:
+
+- `gh auth status` active account: `reallife-spark`
+- `git ls-remote course`: HTTP 403
+- `gh api repos/TuringCollegeSubmissions/rmobil-AE.1.5`: HTTP 404
+- `curl` to the repository page: HTTP 404
+
+The private `interview_app` repo is pushed, but the course mirror is not. The
+repository alias `rmobil` and the active `reallife-spark` login may be different
+GitHub identities. Authenticate `gh` as the student account, or click the LMS
+GitHub icon to create/authorize the repository. Do not push to a different
+account blindly and do not force-push.
 
 ## User action: course repository
 

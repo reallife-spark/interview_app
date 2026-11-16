@@ -25,10 +25,12 @@ creating or pushing. Do not create the private repo under a different account.
 
 **Current check (2026-11-16):** the private repo
 `https://github.com/reallife-spark/interview_app` was created and `main` pushed
-tagged `v0.1.1`. The `course` remote was added, but `git ls-remote course` returned
-HTTP 403 (`Write access to repository not granted`). The course mirror is
-blocked until `TuringCollegeSubmissions` access is authorized and the LMS
-GitHub URL is confirmed. See `HANDOFF.md`.
+tagged `v0.1.1`. The `course` remote was added, but `git ls-remote course`
+returned HTTP 403 (`Write access to repository not granted`); `gh api` and
+`curl` both returned 404. The active `gh` account is `reallife-spark`, while the
+repository alias is `rmobil`. The course mirror is blocked until the correct
+student GitHub identity is active and the LMS GitHub URL is confirmed. See
+`HANDOFF.md`.
 
 ## Local setup
 

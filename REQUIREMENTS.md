@@ -43,7 +43,7 @@ A requirement is `done` only after its check passes.
 | R22 | Security documentation | `SECURITY.md` | OWASP mapping and limitations | done |
 | R23 | Evaluation documentation | `EVALUATION.md`; `eval/results.csv`; `eval/summary.md` | demo/live result recorded | done |
 | R24 | Deployment documentation | `DEPLOYMENT.md`; Streamlit secrets | user-confirmed deploy | done |
-| R25 | Course repo submission | `course` remote; push to `rmobil-AE.1.5` | user checks GitHub page | blocked: 403, authorize TuringCollegeSubmissions |
+| R25 | Course repo submission | `course` remote; push to `rmobil-AE.1.5` | user checks GitHub page | blocked: 403/404; active account `reallife-spark` vs alias `rmobil` |
 | R26 | Private backup repo | `interview_app` under `reallife-spark`; pushed, tag `v0.1.1` | user checks GitHub page | done |
 | R27 | No secrets in tracked content | `.gitignore`; `.env.example`; secret scan | `git grep`/scanner | done |
 | R28 | No live claim from development host | docs use “implemented and tested” or “not verified here” | doc review | done |
@@ -80,7 +80,7 @@ A requirement is `done` only after its check passes.
 |---|---|---|---|
 | G1 | GitHub account is `reallife-spark` and is the intended account | `gh auth status` and `gh api user` checked; email scope unavailable | done |
 | G2 | Private repo `interview_app` may be created | explicit user request; created | done |
-| G3 | Course repo push | `git ls-remote course` returned 403; wait for authorization | blocked |
+| G3 | Course repo push | `git ls-remote` 403; `gh api`/`curl` 404; active account `reallife-spark` vs alias `rmobil` | blocked |
 | G4 | Streamlit Cloud deployment | user action; build agent prepares files | planned |
 | G5 | Review booked | user action | planned |
 
