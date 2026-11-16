@@ -12,7 +12,7 @@ and uses OpenRouter.
 - Two structured JSON outputs: `QuestionSet` and `AnswerEvaluation`.
 - A defensive system prompt plus input/output guardrails for off-topic and
   prompt-injection attempts.
-- Job-description tailoring with a bounded lexical RAG-lite path.
+- Job-description tailoring with a bounded hybrid RAG-lite path (BM25 + hashed vectors + RRF).
 - Model settings, model chooser, live catalog pricing, last-call usage and session caps.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
@@ -66,7 +66,7 @@ app.py
                  -> providers (build_provider + private adapters)
                  -> prompts (PromptLibrary + private templates)
                  -> guardrails (secrets, injection, canary)
-                 -> tailoring (job-description cap + BM25-lite)
+                 -> tailoring (job-description cap + hybrid RAG-lite)
                  -> session (call/cost caps, history, canary)
                  -> schemas (QuestionSet, AnswerEvaluation)
 ```
@@ -84,7 +84,7 @@ src/interview_practice/
   engine.py          provider + prompt + safety + budget service
   cost.py            model catalog and cost estimates
   guardrails.py      secret/injection/canary checks
-  tailoring.py       job-description cap and lexical retrieval
+  tailoring.py       job-description cap and hybrid RAG-lite
   session.py         session caps, usage history and exported history
   usage.py           CallUsage records for observability
   evaluation.py      prompt comparison rubric and runners

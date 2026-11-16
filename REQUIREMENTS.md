@@ -61,7 +61,7 @@ A requirement is `done` only after its check passes.
 | B2 | Two JSON formats | `QuestionSet`, `AnswerEvaluation` | schema tests | done |
 | B3 | Prompt price | `cost.py` + OpenRouter models endpoint | cost test | done |
 | B4 | OpenRouter docs improvement | model catalog drives picker, pricing, context length, supported parameters | config test | done |
-| B5 | Job-description tailoring (RAG) | whole-text v1 + lexical RAG-lite | tailoring test | done: lexical; hybrid upgrade pending |
+| B5 | Job-description tailoring (RAG) | whole-text v1 + hybrid RAG-lite (BM25 + hashed vectors + RRF) | tailoring test | done |
 | B6 | LLM chooser | three course models; local models in local mode | UI test | done |
 | B7 | Security guard | soft/strict modes | guardrail test | done |
 | B8 | Full chatbot | Coach tab with history | chat test | done |

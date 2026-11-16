@@ -53,6 +53,26 @@ def test_rag_lite_selects_relevant_topic() -> None:
     assert "RAG-lite" in context.notice
 
 
+def test_section_aware_chunks_keep_heading_context() -> None:
+    job_description = (
+        "About the role\n\n"
+        + "Build and evaluate LLM applications with product and research teams. " * 8
+        + "\n\nRequirements\n\n"
+        + "Python, RAG evaluation, retrieval quality and release gates. " * 8
+        + "\n\nNice to have\n\n"
+        + "Kubernetes, GPU scheduling and production observability. " * 8
+    )
+    context = build_tailored_context(
+        job_description,
+        query="Kubernetes GPU scheduling",
+        enable_lexical_rag=True,
+        top_k=2,
+    )
+    assert context.used_rag
+    assert "Nice to have:" in context.text
+    assert "Kubernetes" in context.text
+
+
 def test_rag_can_be_disabled() -> None:
     context = build_tailored_context(
         "AI engineer with Python and RAG experience. " * 60,

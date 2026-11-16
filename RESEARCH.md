@@ -116,8 +116,9 @@ The app treats a job description as data. It extracts signals such as:
 - seniority and collaboration expectations;
 - likely interview themes.
 
-The current implementation uses a bounded lexical retrieval path. A long job
-description is chunked and the most relevant chunks are selected. This is
+The current implementation uses a bounded hybrid retrieval path: section-aware
+chunking, BM25, deterministic hashed vectors and reciprocal-rank fusion. A long
+job description is chunked and the most relevant chunks are selected. This is
 deliberately not a vector database; it is a transparent, local retrieval aid.
 
 ## Practice loop

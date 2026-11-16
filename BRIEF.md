@@ -71,7 +71,7 @@ Five medium tasks and one hard task:
   `reasoning_effort` when supported.
 - Two JSON formats: `QuestionSet` and `AnswerEvaluation`.
 - Price estimate from OpenRouter model metadata.
-- Job-description tailoring with lexical RAG-lite.
+- Job-description tailoring with hybrid RAG-lite (BM25 + hashed vectors + RRF).
 - Model chooser limited to the three course models.
 - Security guard with soft-flag default and a strict toggle.
 - Full multi-turn chatbot.

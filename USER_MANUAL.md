@@ -159,7 +159,7 @@ Chat history is not saved to disk.
 | Top-p | 1.0 | Nucleus sampling | Usually leave at 1.0 |
 | Reasoning effort | none | Reasoning budget when supported | Use only when the model supports it |
 | Strict safety | off | Blocks known injection patterns | Turn on for a harder security demo |
-| Lexical RAG-lite | off | Selects job-description chunks | Turn on for long job descriptions |
+| Hybrid RAG-lite | off | Selects job-description chunks with BM25 + hashed vectors + RRF | Turn on for long job descriptions |
 | Session call cap | 20 | Model calls per session | Protects against repeated calls |
 | Session cost cap | $0.50 | Estimated spend per session | Protects against cost abuse |
 | Input cap | 8,000 chars | Maximum input length | Keeps prompts bounded |
@@ -262,7 +262,7 @@ Use `DEMO.md` for the five-minute script. The short version:
 - The offline evaluation is a fixture, not a live model-quality result.
 - The evaluation score is a coaching heuristic.
 - Rule-based guardrails can miss paraphrased attacks.
-- The RAG-lite path is lexical, not a vector database.
+- The RAG-lite path is hybrid and in-memory; it is not a vector database.
 - Local mode is a developer path, not a public deployment.
 - No live evaluation or deployment is claimed from the development host.
 
