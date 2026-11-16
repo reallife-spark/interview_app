@@ -34,6 +34,13 @@ class ModelInfo:
             and self.completion_per_million is not None
         )
 
+    def supports(self, parameter: str) -> bool:
+        return parameter in self.supported_parameters
+
+    @property
+    def supports_json_mode(self) -> bool:
+        return self.supports("response_format")
+
 
 @dataclass(frozen=True, slots=True)
 class ModelCatalog:

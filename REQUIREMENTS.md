@@ -33,7 +33,7 @@ A requirement is `done` only after its check passes.
 | R12 | Demo mode | deterministic fixtures; default when no key | provider test | done |
 | R13 | Local `agx64` developer mode | OpenAI-compatible provider at `http://127.0.0.1:21464/v1`; auto-detect `/v1/models` | mocked local test | done: mocked; tunnel not exercised |
 | R14 | No silent provider fallback | provider selected explicitly; local failure stays local | provider test | done |
-| R15 | Cost visibility | OpenRouter model metadata + token usage; per-call and session | cost tests | partial: auto catalog/last-call metrics pending |
+| R15 | Cost visibility | OpenRouter model metadata + token usage; per-call and session | cost tests | done |
 | R16 | Model settings | model, temperature, `max_tokens`, `top_p`, `reasoning_effort` when supported | UI/config tests | done |
 | R17 | Two structured JSON formats | `QuestionSet`, `AnswerEvaluation` schemas + parser | schema tests | done |
 | R18 | Security guard | input validation, secret scan, injection detection, canary, strict toggle | guardrail tests | done |
@@ -59,8 +59,8 @@ A requirement is `done` only after its check passes.
 |---|---|---|---|---|
 | B1 | All model settings | sliders/fields in sidebar | UI test | done |
 | B2 | Two JSON formats | `QuestionSet`, `AnswerEvaluation` | schema tests | done |
-| B3 | Prompt price | `cost.py` + OpenRouter models endpoint | cost test | partial: manual refresh; auto fetch pending |
-| B4 | OpenRouter docs improvement | model catalog drives picker, pricing, context length, supported parameters | config test | partial: capability gating pending |
+| B3 | Prompt price | `cost.py` + OpenRouter models endpoint | cost test | done |
+| B4 | OpenRouter docs improvement | model catalog drives picker, pricing, context length, supported parameters | config test | done |
 | B5 | Job-description tailoring (RAG) | whole-text v1 + lexical RAG-lite | tailoring test | done: lexical; hybrid upgrade pending |
 | B6 | LLM chooser | three course models; local models in local mode | UI test | done |
 | B7 | Security guard | soft/strict modes | guardrail test | done |

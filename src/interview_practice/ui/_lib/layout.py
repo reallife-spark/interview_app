@@ -77,9 +77,12 @@ def render_app() -> None:
         return
 
     if settings.provider == "openrouter":
+        _ensure_catalog(engine, settings)
+        _show_model_info(engine, settings)
         if st.sidebar.button("Refresh OpenRouter prices", use_container_width=True):
             if engine.refresh_catalog():
                 st.session_state["catalog"] = engine.catalog
+                st.session_state["catalog_attempted"] = True
                 st.sidebar.success("Model prices refreshed.")
             else:
                 st.sidebar.warning(
@@ -247,11 +250,54 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
     return settings, technique
 
 
+def _ensure_catalog(engine: InterviewEngine, settings: Settings) -> None:
+    if not settings.openrouter_api_key:
+        return
+    if "catalog" in st.session_state or st.session_state.get("catalog_attempted"):
+        return
+    st.session_state["catalog_attempted"] = True
+    with st.spinner("Loading OpenRouter model metadata…"):
+        if engine.refresh_catalog():
+            st.session_state["catalog"] = engine.catalog
+        else:
+            st.sidebar.warning(
+                "Could not load OpenRouter prices/capabilities; using safe defaults."
+            )
+
+
+def _show_model_info(engine: InterviewEngine, settings: Settings) -> None:
+    info = engine.catalog.get(settings.model)
+    if info is None:
+        st.sidebar.caption("Model metadata is not loaded yet.")
+        return
+    context = (
+        f"{info.context_length:,} tokens"
+        if info.context_length
+        else "context unknown"
+    )
+    if info.has_price:
+        price = (
+            f"in {format_usd(info.prompt_per_million)}/M · "
+            f"out {format_usd(info.completion_per_million)}/M"
+        )
+    else:
+        price = "price unavailable"
+    st.sidebar.caption(f"{info.name}: {context} · {price}")
+    json_mode = "yes" if info.supports_json_mode else "no/unknown"
+    reasoning = "yes" if info.supports("reasoning") else "no/unknown"
+    st.sidebar.caption(f"JSON mode: {json_mode} · Reasoning: {reasoning}")
+
+
 def _show_stats(session: SessionState, settings: Settings) -> None:
     st.sidebar.metric("Calls", f"{session.calls}/{settings.max_calls}")
     st.sidebar.metric("Session cost", format_usd(session.cost_usd))
-    if session.last_cost_source:
-        st.sidebar.caption(f"Last call cost: {session.last_cost_source}")
+    usage = session.last_usage
+    if usage is not None:
+        st.sidebar.caption(
+            f"Last: {usage.model} · {usage.prompt_tokens}/"
+            f"{usage.completion_tokens} tokens · {usage.latency_ms} ms · "
+            f"{format_usd(usage.cost_usd)} ({usage.cost_source})"
+        )
     if session.calls and session.cost_usd >= settings.session_cost_cap_usd > 0:
         st.sidebar.error("Session cost cap reached; further model calls are blocked.")
 

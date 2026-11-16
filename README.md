@@ -13,7 +13,7 @@ and uses OpenRouter.
 - A defensive system prompt plus input/output guardrails for off-topic and
   prompt-injection attempts.
 - Job-description tailoring with a bounded lexical RAG-lite path.
-- Model settings, model chooser, price estimate and session caps.
+- Model settings, model chooser, live catalog pricing, last-call usage and session caps.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
 
@@ -85,7 +85,8 @@ src/interview_practice/
   cost.py            model catalog and cost estimates
   guardrails.py      secret/injection/canary checks
   tailoring.py       job-description cap and lexical retrieval
-  session.py         session caps and exported history
+  session.py         session caps, usage history and exported history
+  usage.py           CallUsage records for observability
   evaluation.py      prompt comparison rubric and runners
   providers/         build_provider; base contract; _lib adapters; tests
   prompts/           PromptLibrary; public schemas/techniques; _lib; tests

@@ -28,6 +28,16 @@ def test_catalog_parses_per_token_prices() -> None:
     assert info.supported_parameters == ("temperature", "max_tokens")
 
 
+def test_model_info_reports_supported_parameters() -> None:
+    info = ModelInfo(
+        id="x",
+        supported_parameters=("response_format", "temperature"),
+    )
+    assert info.supports("response_format")
+    assert info.supports_json_mode
+    assert not info.supports("reasoning")
+
+
 def test_estimate_cost_uses_prompt_and_completion() -> None:
     info = ModelInfo(
         id="x",

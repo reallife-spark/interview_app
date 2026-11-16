@@ -42,11 +42,13 @@ class StaticProvider:
         self.replies = replies
         self.calls = 0
         self.last_messages: list[ChatMessage] = []
+        self.last_request: CompletionRequest | None = None
 
     def list_models(self) -> list[str]:
         return ["fake/model"]
 
     def complete(self, request: CompletionRequest) -> Completion:
+        self.last_request = request
         self.last_messages = list(request.messages)
         text = self.replies[min(self.calls, len(self.replies) - 1)]
         self.calls += 1
@@ -169,6 +171,55 @@ def test_secret_in_answer_is_blocked_and_not_echoed() -> None:
     assert provider.calls == 0
 
 
+def test_response_format_omitted_when_model_does_not_support_it() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    catalog = ModelCatalog(
+        models={
+            "demo/interview-coach": ModelInfo(
+                id="demo/interview-coach",
+                supported_parameters=("temperature",),
+            )
+        }
+    )
+    engine = InterviewEngine(
+        Settings(provider="demo"),
+        provider=provider,
+        catalog=catalog,
+    )
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.last_request is not None
+    assert provider.last_request.response_format is None
+
+
+def test_response_format_sent_when_model_supports_it() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    catalog = ModelCatalog(
+        models={
+            "demo/interview-coach": ModelInfo(
+                id="demo/interview-coach",
+                supported_parameters=("response_format",),
+            )
+        }
+    )
+    engine = InterviewEngine(
+        Settings(provider="demo"),
+        provider=provider,
+        catalog=catalog,
+    )
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.last_request is not None
+    assert provider.last_request.response_format == {"type": "json_object"}
+
+
+def test_session_records_usage_history() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    engine = make_engine(provider)
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert engine.session.last_usage is not None
+    assert engine.session.last_usage.model == "fake/model"
+    assert len(engine.session.usage_history) == 1
+
+
 def test_cost_estimate_is_recorded_when_provider_omits_cost() -> None:
     provider = StaticProvider([QUESTION_JSON])
     catalog = ModelCatalog(
@@ -187,7 +238,8 @@ def test_cost_estimate_is_recorded_when_provider_omits_cost() -> None:
     )
     engine.generate_questions(role="AI engineer", job_description="")
     assert engine.session.cost_usd == pytest.approx(0.00002)
-    assert engine.session.last_cost_source == "estimate"
+    assert engine.session.last_usage is not None
+    assert engine.session.last_usage.cost_source == "estimate"
 
 
 def test_list_models_wraps_provider_error() -> None:

@@ -37,23 +37,11 @@ from interview_practice.providers.base import (
 )
 from interview_practice.session import SessionState
 from interview_practice.tailoring import build_tailored_context
+from interview_practice.usage import CallUsage
 
 
 class EngineError(RuntimeError):
     """A user-facing error with no secret or raw provider payload."""
-
-
-@dataclass(frozen=True, slots=True)
-class CallUsage:
-    """Small public summary of one model call."""
-
-    model: str
-    provider: str
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-    cost_usd: float | None
-    latency_ms: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,18 +151,18 @@ class InterviewEngine:
 
         requirements = ""
         if technique == "chained":
-            first = self._call(
+            first_completion, _ = self._call(
                 self.prompts.chain_stage_one(
                     role=role,
                     job_description=context.text,
                     canary=self.session.canary,
                 )
             )
-            first_guard = self._check_output(first.text)
+            first_guard = self._check_output(first_completion.text)
             warnings.extend(first_guard.warnings)
             requirements = first_guard.text
 
-        completion = self._call(
+        completion, usage = self._call(
             self.prompts.question_set(
                 technique,
                 role=role,
@@ -201,7 +189,7 @@ class InterviewEngine:
             warnings=tuple(warnings),
             notice=context.notice,
             technique=technique,
-            usage=self._usage(completion),
+            usage=usage,
         )
 
     def evaluate_answer(
@@ -227,7 +215,7 @@ class InterviewEngine:
                 warnings, self._check_input(job_description, "job description")
             )
 
-        completion = self._call(
+        completion, usage = self._call(
             self.prompts.answer_evaluation(
                 technique,
                 question=question,
@@ -251,7 +239,7 @@ class InterviewEngine:
             evaluation=evaluation,
             warnings=tuple(warnings),
             technique=technique,
-            usage=self._usage(completion),
+            usage=usage,
         )
 
     def chat(
@@ -271,7 +259,7 @@ class InterviewEngine:
             self._extend_unique(
                 warnings, self._check_input(job_description, "job description")
             )
-        completion = self._call(
+        completion, usage = self._call(
             self.prompts.chat(
                 technique,
                 history=history,
@@ -288,7 +276,7 @@ class InterviewEngine:
             warnings=tuple(warnings),
             technique=technique,
             persona=persona,
-            usage=self._usage(completion),
+            usage=usage,
         )
 
     def _call(
@@ -296,7 +284,7 @@ class InterviewEngine:
         messages: list[ChatMessage],
         *,
         response_format: dict[str, Any] | None = None,
-    ) -> Completion:
+    ) -> tuple[Completion, CallUsage]:
         try:
             self.session.can_call(self.settings)
         except RuntimeError as exc:
@@ -307,6 +295,11 @@ class InterviewEngine:
             model = self.settings.local_model
         else:
             model = self.settings.model
+        model_info = self.catalog.get(model)
+        supports_json = bool(model_info and model_info.supports("response_format"))
+        supports_reasoning = (
+            True if model_info is None else model_info.supports("reasoning")
+        )
         max_tokens = min(self.settings.max_tokens, self.settings.max_output_tokens)
         request = CompletionRequest(
             messages=messages,
@@ -316,35 +309,42 @@ class InterviewEngine:
             top_p=self.settings.top_p,
             reasoning_effort=(
                 self.settings.reasoning_effort
-                if self.settings.provider == "openrouter"
+                if self.settings.provider == "openrouter" and supports_reasoning
                 else None
             ),
-            response_format=response_format,
+            response_format=response_format if supports_json else None,
         )
         try:
             completion = self.provider.complete(request)
         except ProviderError as exc:
             raise EngineError(str(exc)) from exc
-        model_info = self.catalog.get(completion.model) or self.catalog.get(model)
+        cost_info = self.catalog.get(completion.model) or model_info
         estimated = estimate_cost(
             completion.prompt_tokens,
             completion.completion_tokens,
-            model_info,
+            cost_info,
         )
-        self.session.record(completion, estimated_cost=estimated)
-        return completion
-
-    @staticmethod
-    def _usage(completion: Completion) -> CallUsage:
-        return CallUsage(
+        if completion.cost_usd is not None:
+            cost = completion.cost_usd
+            source = "provider"
+        elif estimated is not None:
+            cost = estimated
+            source = "estimate"
+        else:
+            cost = None
+            source = "unavailable"
+        usage = CallUsage(
             model=completion.model,
             provider=completion.provider,
             prompt_tokens=completion.prompt_tokens,
             completion_tokens=completion.completion_tokens,
             total_tokens=completion.total_tokens,
-            cost_usd=completion.cost_usd,
+            cost_usd=cost,
+            cost_source=source,
             latency_ms=completion.latency_ms,
         )
+        self.session.record(usage)
+        return completion, usage
 
     def _check_input(self, text: str, label: str) -> tuple[str, ...]:
         result = self.guardrails.check_input(text)

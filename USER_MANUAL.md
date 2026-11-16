@@ -198,9 +198,11 @@ asks for JSON and the parser handles the reply.
 ## 10. Cost, tokens and limits
 
 - The app shows the session call count and session cost.
-- The last-call cost source is shown as provider, estimate or unavailable.
-- OpenRouter pricing comes from the models endpoint. Use **Refresh OpenRouter
-  prices** if the estimate is unavailable.
+- The last call shows model, input/output tokens, latency and cost.
+- OpenRouter pricing comes from the models endpoint and is loaded when
+  OpenRouter mode is selected. Use **Refresh OpenRouter prices** to retry.
+- Model metadata shows context length and whether JSON mode/reasoning are
+  supported.
 - Demo mode is $0.
 - Local mode has no model charge, but your local hardware does the work.
 - Session caps are application limits, not a billing guarantee.

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from interview_practice.config import Settings
 from interview_practice.messages import ChatMessage
 from interview_practice.prompts.schemas import AnswerEvaluation, QuestionSet
-from interview_practice.providers.base import Completion
+from interview_practice.usage import CallUsage
 
 
 def new_canary() -> str:
@@ -23,9 +23,8 @@ class SessionState:
     messages: list[ChatMessage] = field(default_factory=list)
     questions: QuestionSet | None = None
     evaluation: AnswerEvaluation | None = None
-    last_completion: Completion | None = None
-    last_cost_usd: float | None = None
-    last_cost_source: str = ""
+    last_usage: CallUsage | None = None
+    usage_history: list[CallUsage] = field(default_factory=list)
 
     def can_call(self, settings: Settings) -> None:
         if self.calls >= settings.max_calls:
@@ -41,26 +40,12 @@ class SessionState:
                 "session."
             )
 
-    def record(
-        self,
-        completion: Completion,
-        *,
-        estimated_cost: float | None = None,
-    ) -> None:
+    def record(self, usage: CallUsage) -> None:
         self.calls += 1
-        cost = completion.cost_usd
-        if cost is None:
-            cost = estimated_cost
-        if cost is not None:
-            self.cost_usd += cost
-        self.last_completion = completion
-        self.last_cost_usd = cost
-        if completion.cost_usd is not None:
-            self.last_cost_source = "provider"
-        elif estimated_cost is not None:
-            self.last_cost_source = "estimate"
-        else:
-            self.last_cost_source = "unavailable"
+        if usage.cost_usd is not None:
+            self.cost_usd += usage.cost_usd
+        self.last_usage = usage
+        self.usage_history.append(usage)
 
     def reset(self) -> None:
         self.canary = new_canary()
@@ -69,9 +54,8 @@ class SessionState:
         self.messages.clear()
         self.questions = None
         self.evaluation = None
-        self.last_completion = None
-        self.last_cost_usd = None
-        self.last_cost_source = ""
+        self.last_usage = None
+        self.usage_history.clear()
 
     def add_message(self, role: str, content: str) -> None:
         if role not in {"system", "user", "assistant"}:

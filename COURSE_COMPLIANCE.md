@@ -58,8 +58,8 @@ user-pasted text is authoritative.
 |---|---|---|
 | All model settings | model, temperature, max tokens, top-p, reasoning effort in sidebar | Done |
 | Two JSON formats | `QuestionSet`, `AnswerEvaluation`; parser and schema tests | Done |
-| Prompt price | `cost.py`; OpenRouter model catalog; UI price display | Partial: automatic catalog fetch in Phase 12 Step 84 |
-| OpenRouter docs improvement | model catalog drives model/pricing/supported parameters | Partial: capabilities not yet used by engine |
+| Prompt price | `cost.py`; OpenRouter model catalog; last-call usage | Done |
+| OpenRouter docs improvement | catalog drives pricing, context, supported parameters and request gating | Done |
 | Job description (RAG) | `tailoring.py`; whole-text and lexical RAG-lite | Done; hybrid upgrade in Step 86 |
 | LLM chooser | three course models; local model discovery | Done |
 | Security guard | `GuardrailPipeline`; soft/strict modes; canary | Done |
