@@ -32,7 +32,7 @@ from interview_practice.providers.base import (
     ProviderError,
 )
 from interview_practice.session import SessionState
-from interview_practice.tailoring import TailoredContext, build_tailored_context
+from interview_practice.tailoring import build_tailored_context
 
 
 class EngineError(RuntimeError):
@@ -40,30 +40,41 @@ class EngineError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class CallUsage:
+    """Small public summary of one model call."""
+
+    model: str
+    provider: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    cost_usd: float | None
+    latency_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class QuestionGenerationResult:
     question_set: QuestionSet
     warnings: tuple[str, ...]
     notice: str
-    completion: Completion
-    context: TailoredContext
     technique: str
+    usage: CallUsage
 
 
 @dataclass(frozen=True, slots=True)
 class EvaluationResult:
     evaluation: AnswerEvaluation
     warnings: tuple[str, ...]
-    notice: str
-    completion: Completion
     technique: str
+    usage: CallUsage
 
 
 @dataclass(frozen=True, slots=True)
 class ChatResult:
     reply: str
     warnings: tuple[str, ...]
-    completion: Completion
     technique: str
+    usage: CallUsage
 
 
 class InterviewEngine:
@@ -184,9 +195,8 @@ class InterviewEngine:
             question_set=question_set,
             warnings=tuple(warnings),
             notice=context.notice,
-            completion=completion,
-            context=context,
             technique=technique,
+            usage=self._usage(completion),
         )
 
     def evaluate_answer(
@@ -235,9 +245,8 @@ class InterviewEngine:
         return EvaluationResult(
             evaluation=evaluation,
             warnings=tuple(warnings),
-            notice="",
-            completion=completion,
             technique=technique,
+            usage=self._usage(completion),
         )
 
     def chat(
@@ -270,8 +279,8 @@ class InterviewEngine:
         return ChatResult(
             reply=guarded.text,
             warnings=tuple(warnings),
-            completion=completion,
             technique=technique,
+            usage=self._usage(completion),
         )
 
     def _call(
@@ -316,6 +325,18 @@ class InterviewEngine:
         )
         self.session.record(completion, estimated_cost=estimated)
         return completion
+
+    @staticmethod
+    def _usage(completion: Completion) -> CallUsage:
+        return CallUsage(
+            model=completion.model,
+            provider=completion.provider,
+            prompt_tokens=completion.prompt_tokens,
+            completion_tokens=completion.completion_tokens,
+            total_tokens=completion.total_tokens,
+            cost_usd=completion.cost_usd,
+            latency_ms=completion.latency_ms,
+        )
 
     def _check_input(self, text: str, label: str) -> tuple[str, ...]:
         result = self.guardrails.check_input(text)

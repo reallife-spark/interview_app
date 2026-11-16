@@ -209,9 +209,9 @@ def run_demo() -> list[EvalRow]:
                         technique=technique,
                         case=case,
                         provider="demo",
-                        model=result.completion.model,
+                        model=result.usage.model,
                         score=score,
-                        cost=result.completion.cost_usd,
+                        cost=result.usage.cost_usd,
                     )
                 )
     return rows
@@ -270,9 +270,9 @@ def run_live(*, model: str | None = None) -> list[EvalRow]:
                         technique=technique,
                         case=case,
                         provider="openrouter",
-                        model=result.completion.model,
+                        model=result.usage.model,
                         score=score,
-                        cost=result.completion.cost_usd,
+                        cost=result.usage.cost_usd,
                     )
                 )
     return rows

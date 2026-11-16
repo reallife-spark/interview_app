@@ -77,6 +77,10 @@ def test_generate_questions_returns_schema_and_records_call() -> None:
         count=1,
     )
     assert result.question_set.questions[0].id == "q1"
+    assert result.usage.model == "fake/model"
+    assert result.usage.provider == "fake"
+    assert not hasattr(result, "completion")
+    assert not hasattr(result, "context")
     assert provider.calls == 1
     assert engine.session.calls == 1
     assert "questions" in provider.last_messages[1].content
