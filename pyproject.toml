@@ -15,11 +15,12 @@ dependencies = [
 dev = [
   "pytest>=8.0,<10",
   "ruff>=0.8,<1",
+  "import-linter>=2.6",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["tests"]
+testpaths = ["tests", "src/interview_practice"]
 addopts = "-q"
 markers = [
   "live: requires OPENROUTER_API_KEY and network access",
@@ -36,3 +37,38 @@ ignore = []
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.importlinter]
+root_package = "interview_practice"
+
+[[tool.importlinter.contracts]]
+name = "ui internals are private"
+type = "protected"
+protected_modules = ["interview_practice.ui._lib"]
+allowed_importers = [
+  "interview_practice.ui",
+  "interview_practice.ui.*",
+  "interview_practice.ui.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "ui tests are private"
+type = "protected"
+protected_modules = ["interview_practice.ui.tests"]
+allowed_importers = [
+  "interview_practice.ui.tests",
+  "interview_practice.ui.tests.*",
+  "interview_practice.ui.tests.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "tests never import implementation"
+type = "forbidden"
+source_modules = ["interview_practice.*.tests"]
+forbidden_modules = ["interview_practice.*._lib"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "no package cycles"
+type = "acyclic_siblings"
+ancestors = ["interview_practice"]
