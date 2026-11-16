@@ -15,6 +15,7 @@ from interview_practice.cost import (
 )
 from interview_practice.guardrails import GuardrailPipeline, GuardrailResult
 from interview_practice.messages import ChatMessage
+from interview_practice.prompts import DEFAULT_TECHNIQUE, PromptLibrary
 from interview_practice.prompts.schemas import (
     AnswerEvaluation,
     QuestionSet,
@@ -22,13 +23,6 @@ from interview_practice.prompts.schemas import (
     parse_json_object,
     validate_answer_evaluation,
     validate_question_set,
-)
-from interview_practice.prompts.templates import (
-    DEFAULT_TECHNIQUE,
-    answer_evaluation_messages,
-    chain_stage_one_messages,
-    chat_messages,
-    question_set_messages,
 )
 from interview_practice.providers import build_provider
 from interview_practice.providers.base import (
@@ -92,6 +86,7 @@ class InterviewEngine:
             raise EngineError(str(exc)) from exc
         self.session = session or SessionState()
         self.catalog = catalog or default_catalog()
+        self.prompts = PromptLibrary()
         self.guardrails = GuardrailPipeline(
             max_input_chars=settings.max_input_chars,
             max_output_chars=max(12_000, settings.max_output_tokens * 8),
@@ -153,7 +148,7 @@ class InterviewEngine:
         requirements = ""
         if technique == "chained":
             first = self._call(
-                chain_stage_one_messages(
+                self.prompts.chain_stage_one(
                     role=role,
                     job_description=context.text,
                     canary=self.session.canary,
@@ -164,7 +159,7 @@ class InterviewEngine:
             requirements = first_guard.text
 
         completion = self._call(
-            question_set_messages(
+            self.prompts.question_set(
                 technique,
                 role=role,
                 job_description=context.text,
@@ -218,7 +213,7 @@ class InterviewEngine:
             )
 
         completion = self._call(
-            answer_evaluation_messages(
+            self.prompts.answer_evaluation(
                 technique,
                 question=question,
                 answer=answer,
@@ -262,7 +257,7 @@ class InterviewEngine:
                 warnings, self._check_input(job_description, "job description")
             )
         completion = self._call(
-            chat_messages(
+            self.prompts.chat(
                 technique,
                 history=history,
                 user_message=user_message,

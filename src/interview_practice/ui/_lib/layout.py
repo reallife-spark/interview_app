@@ -23,10 +23,10 @@ from interview_practice.engine import (
     InterviewEngine,
     QuestionGenerationResult,
 )
-from interview_practice.prompts.templates import (
+from interview_practice.prompts import (
     DEFAULT_TECHNIQUE,
     TECHNIQUE_ORDER,
-    TECHNIQUES,
+    technique_options,
 )
 from interview_practice.providers import PROVIDER_NAMES
 from interview_practice.session import SessionState
@@ -37,6 +37,7 @@ PROVIDER_LABELS = {
     "local": "Local agx64 — developer",
 }
 MODEL_INDEX = {model: index for index, model in enumerate(COURSE_MODELS)}
+TECHNIQUE_BY_KEY = {item.key: item for item in technique_options()}
 
 
 def _runtime_settings() -> Settings:
@@ -171,10 +172,10 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             "Prompt technique",
             TECHNIQUE_ORDER,
             index=TECHNIQUE_ORDER.index(DEFAULT_TECHNIQUE),
-            format_func=lambda key: TECHNIQUES[key].label,
+            format_func=lambda key: TECHNIQUE_BY_KEY[key].label,
             key="technique",
         )
-        st.caption(TECHNIQUES[technique].description)
+        st.caption(TECHNIQUE_BY_KEY[technique].description)
 
         temperature = st.slider(
             "Temperature",
@@ -301,7 +302,7 @@ def _prepare_tab(engine: InterviewEngine, technique: str) -> None:
     if result.notice:
         st.caption(result.notice)
     _warnings(result.warnings)
-    st.caption(f"Technique: {TECHNIQUES[result.technique].label}")
+    st.caption(f"Technique: {TECHNIQUE_BY_KEY[result.technique].label}")
     for question in result.question_set.questions:
         with st.container(border=True):
             st.markdown(f"**{question.id}. {question.question}**")

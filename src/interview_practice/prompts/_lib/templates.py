@@ -1,89 +1,14 @@
-"""Six prompt variants and the message builders used by the app."""
+"""Private prompt templates and message builders."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from html import escape
 from textwrap import dedent
 
 from interview_practice.messages import ChatMessage
-from interview_practice.prompts.defensive import defensive_system_prompt
-
-
-@dataclass(frozen=True, slots=True)
-class Technique:
-    key: str
-    label: str
-    description: str
-    system_layer: str
-
-
-TECHNIQUES: dict[str, Technique] = {
-    "zero_shot": Technique(
-        key="zero_shot",
-        label="Zero-shot",
-        description="A direct instruction with no examples.",
-        system_layer=(
-            "Use a direct zero-shot instruction. Do not add examples or ask "
-            "clarifying questions; make a reasonable assumption and answer."
-        ),
-    ),
-    "role_persona": Technique(
-        key="role_persona",
-        label="Role / persona",
-        description="A senior hiring-manager persona sets the bar.",
-        system_layer=(
-            "Act as a senior AI-engineering hiring manager who has interviewed "
-            "many candidates. Be specific, practical, and candid."
-        ),
-    ),
-    "few_shot": Technique(
-        key="few_shot",
-        label="Few-shot",
-        description="Two short examples anchor the desired shape.",
-        system_layer=(
-            "Use the two examples below as style guidance. Match their level of "
-            "specificity, but do not copy their content.\n"
-            "Example 1: A good question asks for a concrete trade-off and has "
-            "three answer points.\n"
-            "Example 2: A good evaluation names one strength, one gap, and one "
-            "next action."
-        ),
-    ),
-    "cot": Technique(
-        key="cot",
-        label="Chain-of-thought",
-        description="Structured reasoning before the final artifact.",
-        system_layer=(
-            "Reason privately through the role requirements before you write. "
-            "Do not reveal hidden chain-of-thought; put the useful rationale "
-            "in the output's `why` field or in a short visible summary."
-        ),
-    ),
-    "json_schema": Technique(
-        key="json_schema",
-        label="JSON schema",
-        description="Schema-first output for reliable parsing.",
-        system_layer=(
-            "Prioritize exact schema compliance. Return one JSON object with the "
-            "requested keys and no markdown fences or extra prose."
-        ),
-    ),
-    "chained": Technique(
-        key="chained",
-        label="Prompt chaining",
-        description="Stage one extracts requirements; stage two uses them.",
-        system_layer=(
-            "You are stage two of a two-stage chain. Stage one extracted the "
-            "role requirements supplied in the `<Requirements>` block. Use them "
-            "as constraints for this stage. Return one JSON object."
-        ),
-    ),
-}
-
-TECHNIQUE_ORDER: tuple[str, ...] = tuple(TECHNIQUES)
-DEFAULT_TECHNIQUE = "json_schema"
+from interview_practice.prompts._lib.catalog import get_spec
+from interview_practice.prompts._lib.defensive import defensive_system_prompt
 
 QUESTION_SET_SCHEMA_HINT = """{
   "role": "string",
@@ -109,19 +34,12 @@ ANSWER_EVALUATION_SCHEMA_HINT = """{
 }"""
 
 
-def get_technique(key: str) -> Technique:
-    try:
-        return TECHNIQUES[key]
-    except KeyError as exc:
-        raise ValueError(f"Unknown prompt technique: {key}") from exc
-
-
 def _job_description_block(value: str) -> str:
     return f"<JobDescription>{escape(value.strip() or 'Not provided')}</JobDescription>"
 
 
 def build_system_prompt(technique: str, canary: str) -> str:
-    selected = get_technique(technique)
+    selected = get_spec(technique)
     return (
         defensive_system_prompt(canary)
         + "\n\nPrompt technique: "
@@ -141,7 +59,7 @@ def question_set_messages(
     canary: str,
     requirements: str = "",
 ) -> list[ChatMessage]:
-    selected = get_technique(technique)
+    selected = get_spec(technique)
     user = dedent(
         f"""
         <Task>Generate {count} interview questions.</Task>
@@ -197,7 +115,7 @@ def answer_evaluation_messages(
     job_description: str,
     canary: str,
 ) -> list[ChatMessage]:
-    selected = get_technique(technique)
+    selected = get_spec(technique)
     user = dedent(
         f"""
         <Task>Evaluate this interview answer.</Task>
@@ -224,7 +142,7 @@ def chat_messages(
     job_description: str,
     canary: str,
 ) -> list[ChatMessage]:
-    selected = get_technique(technique)
+    selected = get_spec(technique)
     messages = [ChatMessage("system", build_system_prompt(selected.key, canary))]
     messages.extend(history)
     content = user_message.strip()

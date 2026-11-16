@@ -18,8 +18,8 @@ from pathlib import Path
 from interview_practice.config import COURSE_MODELS, Settings
 from interview_practice.cost import default_catalog
 from interview_practice.engine import EngineError, InterviewEngine
+from interview_practice.prompts import TECHNIQUE_ORDER
 from interview_practice.prompts.schemas import QuestionSet
-from interview_practice.prompts.templates import TECHNIQUE_ORDER
 from interview_practice.providers.base import Completion, CompletionRequest
 from interview_practice.session import SessionState
 
