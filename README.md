@@ -144,6 +144,9 @@ This is **implemented and tested**, not a live deployment claim.
 
 ## Documentation
 
+- `USER_MANUAL.md` — the full user guide: modes, screens, settings, safety,
+  cost, export and troubleshooting.
+- `RESEARCH.md` — the AI-engineering interview domain and design assumptions.
 - `PROMPTS.md` — six techniques, defensive layer and JSON shapes.
 - `SECURITY.md` — threat model, controls, OWASP mapping and limits.
 - `EVALUATION.md` — prompt comparison method and offline result.

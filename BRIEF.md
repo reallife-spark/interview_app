@@ -127,7 +127,8 @@ applied around the selected technique.
 - Off-topic and injection demos are documented with observed results.
 - The course repo contains the project and history; this is blocked until the
   Turing College repository is writable.
-- `README.md`, `PROMPTS.md`, `SECURITY.md`, `EVALUATION.md`, `DEMO.md`, and
-  `DEPLOYMENT.md` are complete.
+- `README.md`, `USER_MANUAL.md`, `RESEARCH.md`, `PROMPTS.md`, `SECURITY.md`,
+  `EVALUATION.md`, `DEMO.md`, `DEPLOYMENT.md` and `COURSE_COMPLIANCE.md` are
+  complete.
 - No secret is present in any page, log, commit, or command output.
 - No live deployment or model-quality claim is made from this host.

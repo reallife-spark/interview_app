@@ -49,8 +49,8 @@ A requirement is `done` only after its check passes.
 | R28 | No live claim from development host | docs use “implemented and tested” or “not verified here” | doc review | done |
 | R29 | Deadline discipline | MVP first; optional tasks after required features | timeline check | done |
 | R30 | Review scheduling | user submits and books review | user confirmation | planned: waits on course repo |
-| R31 | User manual | `USER_MANUAL.md` | manual read-through | planned: Phase 12 |
-| R32 | Research note | `RESEARCH.md` | research read-through | planned: Phase 12 |
+| R31 | User manual | `USER_MANUAL.md` | manual read-through | done |
+| R32 | Research note | `RESEARCH.md` | research read-through | done |
 | R33 | Course compliance map | `COURSE_COMPLIANCE.md` | source/status audit | done |
 
 ## Bonus requirements

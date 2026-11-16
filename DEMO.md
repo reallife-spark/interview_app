@@ -14,7 +14,8 @@ tags:
 # Five-minute review demo
 
 This script is for a reviewer. It uses **demo mode** by default so the demo
-works without a key. A live OpenRouter pass is optional.
+works without a key. A live OpenRouter pass is optional. See `USER_MANUAL.md`
+for the full control reference and troubleshooting.
 
 ## Before the call
 

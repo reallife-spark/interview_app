@@ -9,3 +9,4 @@ adding or importing one.
 - Run `./scripts/check.sh` after changes; it includes `lint-imports`.
 - Do not create `src/packages/`; this project uses `src/interview_practice/`.
 - Do not push the `course` remote; the owner deferred that action.
+- User-facing behaviour is documented in [`USER_MANUAL.md`](USER_MANUAL.md).
