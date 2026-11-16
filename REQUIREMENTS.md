@@ -66,7 +66,7 @@ A requirement is `done` only after its check passes.
 | B7 | Security guard | soft/strict modes | guardrail test | done |
 | B8 | Full chatbot | Coach tab with history | chat test | done |
 | B9 | Prompt/model evaluation | deterministic rubric; live model run user-gated | eval test | done: offline; live user-gated |
-| B10 | Interviewer personas | `PromptLibrary` persona layer; Coach selector | prompt/UI tests | planned: Phase 12 |
+| B10 | Interviewer personas | `PromptLibrary` persona layer; Coach selector | prompt/UI tests | done |
 
 ## Excluded requirements
 

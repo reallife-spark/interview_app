@@ -9,6 +9,11 @@ from textwrap import dedent
 from interview_practice.messages import ChatMessage
 from interview_practice.prompts._lib.catalog import get_spec
 from interview_practice.prompts._lib.defensive import defensive_system_prompt
+from interview_practice.prompts._lib.personas import (
+    DEFAULT_PERSONA,
+    get_persona,
+    get_persona_instruction,
+)
 
 QUESTION_SET_SCHEMA_HINT = """{
   "role": "string",
@@ -141,9 +146,17 @@ def chat_messages(
     user_message: str,
     job_description: str,
     canary: str,
+    persona: str = DEFAULT_PERSONA,
 ) -> list[ChatMessage]:
     selected = get_spec(technique)
-    messages = [ChatMessage("system", build_system_prompt(selected.key, canary))]
+    selected_persona = get_persona(persona)
+    system = build_system_prompt(selected.key, canary) + (
+        "\n\nInterviewer style: "
+        + selected_persona.label
+        + ". "
+        + get_persona_instruction(persona)
+    )
+    messages = [ChatMessage("system", system)]
     messages.extend(history)
     content = user_message.strip()
     if job_description.strip() and not history:

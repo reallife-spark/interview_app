@@ -90,9 +90,9 @@ Then try the job-description path: put the same override text in the job
 description field and generate questions. In soft mode it should warn; in
 strict mode it should block.
 
-## 6. Chatbot and export (30 seconds)
+## 6. Chatbot, persona and export (30 seconds)
 
-Send a follow-up:
+Choose **Interviewer style: Friendly** in Coach, then send a follow-up:
 
 > Give me a three-step study plan for the RAG question.
 

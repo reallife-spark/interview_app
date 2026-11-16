@@ -103,6 +103,17 @@ rubric checks content, not just parse success.
 requirements visible.
 **Weakness:** two calls, more latency and cost.
 
+## Interviewer personas
+
+Coach mode adds one of three styles around the selected prompt technique:
+
+- **Strict** — direct, evidence-heavy, minimal praise.
+- **Neutral** — balanced warmth and directness.
+- **Friendly** — encouraging, but still evidence-based.
+
+The persona changes the interviewer’s manner, not the defensive rules. The
+default is neutral.
+
 ## Defensive system prompt
 
 The defensive layer is always first. Its rules:

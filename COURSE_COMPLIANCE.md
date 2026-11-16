@@ -64,6 +64,7 @@ user-pasted text is authoritative.
 | LLM chooser | three course models; local model discovery | Done |
 | Security guard | `GuardrailPipeline`; soft/strict modes; canary | Done |
 | Full chatbot | Coach tab with session history | Done |
+| Interviewer personas | strict/neutral/friendly selector; `PromptLibrary.chat(..., persona=...)` | Done |
 | Assessment via LLM-as-judge or other | deterministic offline rubric; live run user-gated | Partial; no judge score claimed |
 
 Excluded by scope decision: image generation, Excel jailbreak report, LangChain,

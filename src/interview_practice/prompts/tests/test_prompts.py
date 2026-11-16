@@ -4,9 +4,12 @@ import pytest
 
 from interview_practice.messages import ChatMessage
 from interview_practice.prompts import (
+    DEFAULT_PERSONA,
     DEFAULT_TECHNIQUE,
+    PERSONA_ORDER,
     TECHNIQUE_ORDER,
     PromptLibrary,
+    persona_options,
     technique_options,
 )
 from interview_practice.prompts.schemas import (
@@ -36,6 +39,36 @@ def test_system_prompt_carries_rules_and_canary() -> None:
 
 def test_defensive_prompt_has_fallback_canary() -> None:
     assert "missing-canary" in library.system_prompt("json_schema", "")
+
+
+def test_personas_are_available() -> None:
+    assert DEFAULT_PERSONA in PERSONA_ORDER
+    assert {persona.key for persona in persona_options()} == set(PERSONA_ORDER)
+
+
+def test_chat_persona_style_is_in_system_prompt() -> None:
+    messages = library.chat(
+        "role_persona",
+        history=[],
+        user_message="Ask me a question.",
+        job_description="AI engineer",
+        canary="canary-123",
+        persona="strict",
+    )
+    assert "Interviewer style: Strict" in messages[0].content
+    assert "probe for evidence" in messages[0].content
+
+
+def test_invalid_persona_fails() -> None:
+    with pytest.raises(ValueError, match="persona"):
+        library.chat(
+            "role_persona",
+            history=[],
+            user_message="Ask me a question.",
+            job_description="",
+            canary="canary-123",
+            persona="hostile",
+        )
 
 
 def test_question_messages_escape_data_boundaries() -> None:

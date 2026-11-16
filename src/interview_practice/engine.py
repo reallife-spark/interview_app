@@ -15,7 +15,11 @@ from interview_practice.cost import (
 )
 from interview_practice.guardrails import GuardrailPipeline, GuardrailResult
 from interview_practice.messages import ChatMessage
-from interview_practice.prompts import DEFAULT_TECHNIQUE, PromptLibrary
+from interview_practice.prompts import (
+    DEFAULT_PERSONA,
+    DEFAULT_TECHNIQUE,
+    PromptLibrary,
+)
 from interview_practice.prompts.schemas import (
     AnswerEvaluation,
     QuestionSet,
@@ -74,6 +78,7 @@ class ChatResult:
     reply: str
     warnings: tuple[str, ...]
     technique: str
+    persona: str
     usage: CallUsage
 
 
@@ -256,6 +261,7 @@ class InterviewEngine:
         history: list[ChatMessage],
         job_description: str = "",
         technique: str = DEFAULT_TECHNIQUE,
+        persona: str = DEFAULT_PERSONA,
     ) -> ChatResult:
         user_message = user_message.strip()
         if not user_message:
@@ -272,6 +278,7 @@ class InterviewEngine:
                 user_message=user_message,
                 job_description=job_description,
                 canary=self.session.canary,
+                persona=persona,
             )
         )
         guarded = self._check_output(completion.text)
@@ -280,6 +287,7 @@ class InterviewEngine:
             reply=guarded.text,
             warnings=tuple(warnings),
             technique=technique,
+            persona=persona,
             usage=self._usage(completion),
         )
 

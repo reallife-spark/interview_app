@@ -24,8 +24,11 @@ from interview_practice.engine import (
     QuestionGenerationResult,
 )
 from interview_practice.prompts import (
+    DEFAULT_PERSONA,
     DEFAULT_TECHNIQUE,
+    PERSONA_ORDER,
     TECHNIQUE_ORDER,
+    persona_options,
     technique_options,
 )
 from interview_practice.providers import PROVIDER_NAMES
@@ -38,6 +41,7 @@ PROVIDER_LABELS = {
 }
 MODEL_INDEX = {model: index for index, model in enumerate(COURSE_MODELS)}
 TECHNIQUE_BY_KEY = {item.key: item for item in technique_options()}
+PERSONA_BY_KEY = {item.key: item for item in persona_options()}
 
 
 def _runtime_settings() -> Settings:
@@ -372,6 +376,14 @@ def _practice_tab(engine: InterviewEngine, technique: str) -> None:
 def _coach_tab(engine: InterviewEngine, technique: str) -> None:
     st.subheader("Coach")
     st.caption("Multi-turn practice. History is kept only in this browser session.")
+    persona = st.selectbox(
+        "Interviewer style",
+        PERSONA_ORDER,
+        index=PERSONA_ORDER.index(DEFAULT_PERSONA),
+        format_func=lambda key: PERSONA_BY_KEY[key].label,
+        key="interviewer_persona",
+    )
+    st.caption(PERSONA_BY_KEY[persona].description)
     session = _session()
     for message in session.messages:
         with st.chat_message(message.role):
@@ -386,6 +398,7 @@ def _coach_tab(engine: InterviewEngine, technique: str) -> None:
                 history=history,
                 job_description=st.session_state.get("job_description", ""),
                 technique=technique,
+                persona=persona,
             )
         except EngineError as exc:
             st.error(str(exc))

@@ -14,7 +14,7 @@ and uses OpenRouter.
   prompt-injection attempts.
 - Job-description tailoring with a bounded lexical RAG-lite path.
 - Model settings, model chooser, price estimate and session caps.
-- A multi-turn chatbot, not only one-time calls.
+- A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
 
 ## Quick start

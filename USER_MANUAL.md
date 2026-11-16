@@ -99,7 +99,7 @@ to a remote provider.
 5. Click **Generate question set**.
 6. Open **Practice**, choose a question, write an answer and click
    **Evaluate answer**.
-7. Open **Coach** for a follow-up conversation.
+7. Open **Coach**, choose an interviewer style and ask a follow-up question.
 
 ## 6. Screen tour
 
@@ -139,6 +139,7 @@ and raw `AnswerEvaluation` JSON.
 
 ### Coach tab
 
+- **Interviewer style** — strict, neutral or friendly.
 - **Chat input** — ask a follow-up question.
 - **History** — session-only messages.
 - **Export chat (Markdown/JSON)** — download the current session.

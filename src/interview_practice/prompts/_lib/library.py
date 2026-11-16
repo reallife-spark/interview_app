@@ -11,6 +11,12 @@ from interview_practice.prompts._lib.catalog import (
     get_spec,
     technique_options,
 )
+from interview_practice.prompts._lib.personas import (
+    DEFAULT_PERSONA,
+    PERSONA_ORDER,
+    get_persona,
+    persona_options,
+)
 from interview_practice.prompts._lib.templates import (
     answer_evaluation_messages,
     build_system_prompt,
@@ -18,6 +24,7 @@ from interview_practice.prompts._lib.templates import (
     chat_messages,
     question_set_messages,
 )
+from interview_practice.prompts.personas import Persona
 from interview_practice.prompts.techniques import Technique
 
 
@@ -38,6 +45,20 @@ class PromptLibrary:
     def get_technique(self, key: str) -> Technique:
         spec = get_spec(key)
         return Technique(key=spec.key, label=spec.label, description=spec.description)
+
+    @property
+    def default_persona(self) -> str:
+        return DEFAULT_PERSONA
+
+    @property
+    def persona_order(self) -> tuple[str, ...]:
+        return PERSONA_ORDER
+
+    def personas(self) -> tuple[Persona, ...]:
+        return persona_options()
+
+    def get_persona(self, key: str) -> Persona:
+        return get_persona(key)
 
     def system_prompt(self, technique: str, canary: str) -> str:
         return build_system_prompt(technique, canary)
@@ -101,6 +122,7 @@ class PromptLibrary:
         user_message: str,
         job_description: str,
         canary: str,
+        persona: str = DEFAULT_PERSONA,
     ) -> list[ChatMessage]:
         return chat_messages(
             technique,
@@ -108,4 +130,5 @@ class PromptLibrary:
             user_message=user_message,
             job_description=job_description,
             canary=canary,
+            persona=persona,
         )

@@ -113,8 +113,13 @@ def test_evaluate_answer_returns_evaluation() -> None:
 def test_chat_returns_reply() -> None:
     provider = StaticProvider(["Try a STAR answer."])
     engine = make_engine(provider)
-    result = engine.chat(user_message="Help me prepare", history=[])
+    result = engine.chat(
+        user_message="Help me prepare",
+        history=[],
+        persona="friendly",
+    )
     assert result.reply == "Try a STAR answer."
+    assert result.persona == "friendly"
 
 
 def test_call_cap_blocks_further_calls() -> None:

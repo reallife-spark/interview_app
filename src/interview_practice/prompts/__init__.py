@@ -1,4 +1,4 @@
-"""Prompt techniques and the public prompt-construction facade."""
+"""Prompt techniques, personas and the public prompt-construction facade."""
 
 from interview_practice.prompts._lib.catalog import (
     DEFAULT_TECHNIQUE,
@@ -6,12 +6,22 @@ from interview_practice.prompts._lib.catalog import (
     technique_options,
 )
 from interview_practice.prompts._lib.library import PromptLibrary
+from interview_practice.prompts._lib.personas import persona_options
+from interview_practice.prompts.personas import (
+    DEFAULT_PERSONA,
+    PERSONA_ORDER,
+    Persona,
+)
 from interview_practice.prompts.techniques import Technique
 
 __all__ = [
+    "DEFAULT_PERSONA",
     "DEFAULT_TECHNIQUE",
+    "PERSONA_ORDER",
+    "Persona",
     "PromptLibrary",
     "TECHNIQUE_ORDER",
     "Technique",
+    "persona_options",
     "technique_options",
 ]

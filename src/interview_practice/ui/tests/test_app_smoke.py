@@ -27,6 +27,11 @@ def test_app_renders_in_demo_mode(monkeypatch) -> None:
     assert any(item.value == "demo" for item in at.selectbox)
 
 
+def test_persona_selector_is_visible(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    assert any(item.key == "interviewer_persona" for item in at.selectbox)
+
+
 def test_generate_questions_in_demo_mode(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     _button(at, "generate").click().run()
