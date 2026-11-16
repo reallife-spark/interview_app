@@ -269,7 +269,7 @@ Use `DEMO.md` for the five-minute script. The short version:
 ## 16. Future improvements
 
 - Live prompt-quality evaluation with a dated run.
-- Hybrid retrieval with BM25 and vector ranking.
+- Full vector-database retrieval in Sprint 2.
 - More interviewer personas and drills.
 - Streaming responses and per-call traces.
 - Calibrated human review of the evaluation rubric.

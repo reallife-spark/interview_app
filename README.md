@@ -122,12 +122,12 @@ python scripts/red_team_prompts.py --demo
 
 Evidence recorded on **2026-11-16** on this host:
 
-- 71 tests pass.
+- 79 tests pass.
 - Ruff reports 0 findings.
 - 8 import-linter contracts kept; the pass/fail/revert proof is documented in
   `src/interview_practice/README.md`.
 - Headless Streamlit starts and returns HTTP 200.
-- The offline evaluation runs 18 rows; `json_schema` ranks first in the fixture.
+- The offline evaluation runs 18 rows; `json_schema` ranks first at 9.62/10 in the fixture.
 - Vault `./scripts/validate.sh` passes.
 
 This is **implemented and tested**, not a live deployment claim.

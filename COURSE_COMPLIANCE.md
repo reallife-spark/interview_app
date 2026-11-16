@@ -40,17 +40,17 @@ user-pasted text is authoritative.
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| Research the interview-preparation domain | `RESEARCH.md`; `BRIEF.md` domain choice | Will be complete in Phase 12 Step 82 |
+| Research the interview-preparation domain | `RESEARCH.md`; `BRIEF.md` domain choice | Done |
 | Single-page front-end using Streamlit | `app.py`; three tabs; `ui/_lib/layout.py` | Done |
 | Call OpenRouter | `providers/_lib/openrouter.py`; `Provider.complete(CompletionRequest)` | Done; live key unavailable |
 | Use a course-allowed model | default `openai/gpt-6-luna`; three-model chooser | Done |
 | At least 5 system prompts with different techniques | six techniques in `PromptLibrary`; `PROMPTS.md` | Done |
-| Check which prompt works best | `scripts/evaluate_prompts.py`; `EVALUATION.md`; offline fixture; live user-gated | Partial |
+| Check which prompt works best | `scripts/evaluate_prompts.py`; `EVALUATION.md`; offline quality + concept coverage; live user-gated | Done: offline; live user-gated |
 | Defensive system prompt | `prompts/_lib/defensive.py`; `GuardrailPipeline`; `SECURITY.md` | Done |
 | Off-topic demo | `DEMO.md`; defensive-prompt tests | Done: prompt-level + manual demo |
 | Prompt-injection demo | red-team fixtures; `DEMO.md`; strict mode | Done |
 | UI for a real interview-preparation experience | Prepare / Practice / Coach; `AppTest` | Done |
-| Reflection and improvement | `README.md` limitations; `USER_MANUAL.md`; `RESEARCH.md` | Will be complete in Phase 12 |
+| Reflection and improvement | `README.md` limitations; `USER_MANUAL.md`; `RESEARCH.md` | Done |
 
 ## Bonus task coverage
 
@@ -65,7 +65,7 @@ user-pasted text is authoritative.
 | Security guard | `GuardrailPipeline`; soft/strict modes; canary | Done |
 | Full chatbot | Coach tab with session history | Done |
 | Interviewer personas | strict/neutral/friendly selector; `PromptLibrary.chat(..., persona=...)` | Done |
-| Assessment via LLM-as-judge or other | deterministic offline rubric; live run user-gated | Partial; no judge score claimed |
+| Assessment via LLM-as-judge or other | deterministic offline rubric; live run user-gated | Done: offline; no judge score claimed |
 
 Excluded by scope decision: image generation, Excel jailbreak report, LangChain,
 vector database, open-source-only model. These are not unfinished tasks.
@@ -75,15 +75,15 @@ vector database, open-source-only model. These are not unfinished tasks.
 | Criterion | Where explained | Status |
 |---|---|---|
 | Different prompting techniques | `PROMPTS.md`; `PromptLibrary`; `EVALUATION.md` | Done |
-| LLM settings and their effects | `USER_MANUAL.md`; sidebar help; `EVALUATION.md` | Complete after Step 82 |
-| User/system/assistant roles | `USER_MANUAL.md`; `PROMPTS.md` | Complete after Step 82 |
-| Different output types | `QuestionSet`, `AnswerEvaluation`, chat text; parse errors | Done; explain in Step 82 |
+| LLM settings and their effects | `USER_MANUAL.md`; sidebar help; `EVALUATION.md` | Done |
+| User/system/assistant roles | `USER_MANUAL.md`; `PROMPTS.md` | Done |
+| Different output types | `QuestionSet`, `AnswerEvaluation`, chat text; parse errors | Done |
 | Works as intended | tests, AppTest, headless HTTP 200 | Done |
-| Calls OpenRouter with correct parameters | mocked provider tests; capability-aware request in Step 84 | Partial until Step 84 |
+| Calls OpenRouter with correct parameters | mocked provider tests; capability-aware request | Done |
 | Uses a front-end library | Streamlit UI | Done |
-| Explains prompt/settings choices | `PROMPTS.md`; `USER_MANUAL.md`; `RESEARCH.md` | Complete after Step 82 |
+| Explains prompt/settings choices | `PROMPTS.md`; `USER_MANUAL.md`; `RESEARCH.md` | Done |
 | Understands problems | `SECURITY.md`; `EVALUATION.md`; `README.md` limits | Done |
-| Suggests improvements | `README.md`; `USER_MANUAL.md` future-improvements section | Complete after Step 82 |
+| Suggests improvements | `README.md`; `USER_MANUAL.md` future-improvements section | Done |
 
 ## Link coverage
 

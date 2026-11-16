@@ -20,7 +20,7 @@ tags:
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
 - Course alias `rmobil` is a public GitHub user (`Mobil`); the active `gh`
   account is `reallife-spark`.
-- Checks: 71 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
+- Checks: 79 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Demo evaluation: 18 rows; `json_schema` ranks first in the offline fixture.
 
 ## Current blocker

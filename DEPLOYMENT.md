@@ -74,7 +74,7 @@ python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 ```
 
-Expected on this host (2026-11-16): 71 tests, Ruff 0, 18 evaluation rows,
+Expected on this host (2026-11-17): 79 tests, Ruff 0, 18 evaluation rows,
 red-team fixtures pass.
 
 ## Git: private repo and course mirror
