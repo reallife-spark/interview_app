@@ -130,6 +130,7 @@ This is **implemented and tested**, not a live deployment claim.
 - `EVALUATION.md` — prompt comparison method and offline result.
 - `DEMO.md` — a five-minute review script.
 - `DEPLOYMENT.md` — local setup, Streamlit Cloud, GitHub remotes and submission.
+- `HANDOFF.md` — current repo state and the course-access blocker.
 - `BRIEF.md` and `REQUIREMENTS.md` — course mapping and status.
 
 ## Limitations

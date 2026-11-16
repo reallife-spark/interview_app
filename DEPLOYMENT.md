@@ -23,6 +23,13 @@ tags:
 The build agent must confirm `gh auth status` shows the intended account before
 creating or pushing. Do not create the private repo under a different account.
 
+**Current check (2026-11-16):** the private repo
+`https://github.com/reallife-spark/interview_app` was created and `main` pushed
+at `730a934`. The `course` remote was added, but `git ls-remote course` returned
+HTTP 403 (`Write access to repository not granted`). The course mirror is
+blocked until `TuringCollegeSubmissions` access is authorized and the LMS
+GitHub URL is confirmed. See `HANDOFF.md`.
+
 ## Local setup
 
 ```bash
