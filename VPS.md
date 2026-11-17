@@ -77,9 +77,12 @@ Streamlit Cloud --HTTPS--> https://real-life.dev/v1
 - `https://real-life.dev/` still returns `200`.
 - Verified 2026-11-17 in the public Cloud app: **Discover agx64 models**
   returned the gateway model list, and `gemma4-2b-131k:latest` returned
-  `READY`. No key was visible. `qwen3-vl-4b-65k:latest` returned an empty
-  content response in the UI at the 1,200-token cap; the same model passed a
-  direct gateway completion, so use a non-thinking model for a short UI smoke.
+  `READY`. No key was visible. `qwen3-vl-4b-65k:latest` exhausted the
+  1,200-token cap on reasoning (`finish_reason=length`,
+  `completion_tokens=1200`) and emitted no visible content; a 4,096-token
+  diagnostic did not finish within 300s. Use a non-thinking model for a short
+  UI smoke. The provider now reports the cap and finish reason without exposing
+  reasoning text.
 
 ## User action: wire the Cloud app
 

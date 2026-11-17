@@ -84,7 +84,7 @@ python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 ```
 
-Expected on this host (2026-11-17): 111 tests, Ruff 0, 18 evaluation rows,
+Expected on this host (2026-11-17): 113 tests, Ruff 0, 18 evaluation rows,
 red-team fixtures pass.
 
 ## Git: private repo and course mirror
@@ -209,16 +209,22 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 - No key-shaped value appeared in the rendered text or export.
 - This is an automated headless smoke test on 2026-11-17, not a manual
   reviewer test.
-- Re-check on 2026-11-17 at 13:49 UTC: a fresh headless Chromium session loaded
-  the app and its sidebar, so the URL is public in a browser. `curl` still
-  receives a 303 redirect to `share.streamlit.io/-/auth/app`; that is a
-  non-browser auth redirect and is not the public check.
+- Re-check on 2026-11-17 at 13:13 UTC: the first hop is a 303 to
+  `share.streamlit.io/-/auth/app` with a cleared `streamlit_session`. The
+  followed chain is `auth/app` → `.../-/login?payload=...` → app `/` → **200**
+  shell, and it sets `_streamlit_csrf` plus `streamlit_session`. This is
+  Streamlit's anonymous session bootstrap, not a login gate.
+- A fresh headless Chromium session loaded the app and its sidebar. Use
+  `scripts/smoke_public_app.sh` to assert the final URL, 200 shell and
+  `Interview Practice Coach` title; do not treat the first-hop 303 as a failure.
 - Cloud discovery passed at 13:49 UTC: `GET /v1/models` returned 200 from
   `python-requests`, and the `agx64` options appeared in the app.
 - Browser completion with `gemma4-2b-131k:latest` returned `READY` and recorded
-  `Calls 1/20`. `qwen3-vl-4b-65k:latest` returned an empty content response in
-  the UI with the 1,200-token cap; the same model passed a direct gateway
-  completion. Use a non-thinking model for a short UI smoke.
+  `Calls 1/20`. `qwen3-vl-4b-65k:latest` exhausted the 1,200-token cap on
+  reasoning (`finish_reason=length`, `completion_tokens=1200`) and returned no
+  visible content. A 4,096-token diagnostic did not finish within 300s. The
+  provider now reports the finish reason and token count and points to a
+  non-thinking model; it never exposes reasoning text.
 
 ## agx64 public gateway (2026-11-17)
 
@@ -236,9 +242,10 @@ LOCAL_API_KEY = "the server-side gateway token"
 
 The Cloud secret was verified on 2026-11-17 by discovery and a completion from
 the public app; no key appeared in the page controls. The gateway checks above
-were also run from the build host. A repeatable local check is
-`LOCAL_API_KEY=... ./scripts/smoke_gateway.sh`. The `real-life.dev` card remains
-suspended.
+were also run from the build host. Repeatable checks are
+`./scripts/smoke_public_app.sh` and
+`LOCAL_API_KEY=... ./scripts/smoke_gateway.sh`. The `real-life.dev` card
+remains suspended.
 
 ## real-life.dev — suspended
 

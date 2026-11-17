@@ -266,6 +266,7 @@ is blocked, try again in soft mode or clear the session.
 | JSON parse error | Switch to **JSON schema**, retry, or check the model output |
 | `agx64` fails | Check the public gateway and `LOCAL_BASE_URL`; the older SSH tunnel is `http://127.0.0.1:21464/v1` |
 | Cloud cannot reach `agx64` | Check `LOCAL_BASE_URL` and `LOCAL_API_KEY` in Streamlit secrets; gateways return 401/200 |
+| Local thinking model returns empty content | The reasoning used the output cap; use a non-thinking model such as `gemma4-2b-131k:latest`, or raise **Max output tokens** |
 | Session cap reached | Clear the session or switch to Demo |
 | Clear session does not reset | Refresh the browser; session state is in memory |
 

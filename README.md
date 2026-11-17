@@ -9,8 +9,9 @@ and uses OpenRouter.
 It was smoke-tested in OpenRouter mode on 2026-11-17; see `DEPLOYMENT.md` for
 the observed checks and cost. A fresh browser session loaded it on the same
 date, and Cloud `agx64` discovery plus a `gemma4-2b-131k:latest` completion
-passed. `curl` still receives a non-browser 303 auth redirect. No key is in the
-repository.
+passed. `curl` still gets a first-hop 303 as Streamlit bootstraps an anonymous
+session; `scripts/smoke_public_app.sh` follows it and confirms the app title.
+No key is in the repository.
 
 ## What it demonstrates
 
@@ -108,7 +109,7 @@ src/interview_practice/
   prompts/           PromptLibrary; public schemas/techniques; _lib; tests
   ui/                render_app; _lib layout; tests
 tests/               root-module unit tests
-scripts/             check, evaluation and red-team CLIs
+scripts/             check, evaluation, red-team and smoke CLIs
 eval/                demo results and summary
 ```
 
@@ -135,13 +136,14 @@ python scripts/red_team_prompts.py --demo
 python scripts/compare_settings.py --demo
 python scripts/jailbreak_report.py --demo
 LOCAL_API_KEY=... ./scripts/smoke_gateway.sh
+./scripts/smoke_public_app.sh
 ```
 
 `scripts/check.sh` runs pytest, Ruff and `PYTHONPATH=src lint-imports`.
 
 Evidence recorded on **2026-11-17** on this host:
 
-- 111 tests pass.
+- 113 tests pass.
 - Ruff reports 0 findings.
 - 8 import-linter contracts kept; the pass/fail/revert proof is documented in
   `src/interview_practice/README.md`.

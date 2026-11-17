@@ -121,7 +121,24 @@ class OpenAILocalProvider:
         content = message.get("content")
         text = content if isinstance(content, str) else ""
         if not text.strip():
-            raise ProviderError("Local endpoint returned an empty response")
+            finish_reason = str(choices[0].get("finish_reason") or "unknown")
+            usage = data.get("usage") or {}
+            completion_tokens = _int_or_zero(usage.get("completion_tokens"))
+            reasoning_present = bool(
+                message.get("reasoning") or message.get("reasoning_content")
+            )
+            hint = (
+                " The model returned reasoning only; use a non-thinking model "
+                "or raise Max output tokens."
+                if reasoning_present
+                else " The model returned no visible content."
+            )
+            raise ProviderError(
+                "Local endpoint returned empty content "
+                f"(finish_reason={finish_reason}, "
+                f"completion_tokens={completion_tokens})."
+                + hint
+            )
 
         usage = data.get("usage") or {}
         prompt_tokens = _int_or_zero(usage.get("prompt_tokens"))

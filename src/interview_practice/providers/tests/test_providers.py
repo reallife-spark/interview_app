@@ -156,6 +156,45 @@ def test_local_provider_autodetects_model_and_has_no_cost() -> None:
     assert session.last_post[1]["json"]["model"] == "qwen-local"
 
 
+def test_local_provider_reports_thinking_model_token_cap() -> None:
+    session = FakeSession(
+        post_response=FakeResponse(
+            {
+                "model": "qwen3-vl-4b-65k:latest",
+                "choices": [
+                    {
+                        "message": {
+                            "content": "",
+                            "reasoning": "private reasoning must not be exposed",
+                        },
+                        "finish_reason": "length",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 323,
+                    "completion_tokens": 1200,
+                    "total_tokens": 1523,
+                },
+            }
+        )
+    )
+    provider = build_provider(
+        Settings(
+            provider="local",
+            local_base_url="http://127.0.0.1:21464/v1",
+            local_model="qwen3-vl-4b-65k:latest",
+        ),
+        session=session,
+    )
+    with pytest.raises(ProviderError) as exc:
+        provider.complete(_request(model="qwen3-vl-4b-65k:latest"))
+    message = str(exc.value)
+    assert "finish_reason=length" in message
+    assert "completion_tokens=1200" in message
+    assert "non-thinking" in message
+    assert "private reasoning" not in message
+
+
 def test_demo_provider_returns_question_json() -> None:
     provider = build_provider(Settings(provider="demo"))
     completion = provider.complete(

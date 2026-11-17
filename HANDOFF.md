@@ -25,10 +25,14 @@ tags:
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
   A fresh headless Chromium session loaded the app and sidebar on 2026-11-17.
-  `curl` still gets a 303 to Streamlit auth, so use a browser for the public
-  check. Cloud `agx64` discovery and a `gemma4-2b-131k:latest` completion
-  passed; `qwen3-vl-4b-65k:latest` returned empty content in the UI at the
-  1,200-token cap, while the direct gateway completion passed. OpenRouter was
+  `curl` gets a first-hop 303 as Streamlit bootstraps an anonymous session;
+  `scripts/smoke_public_app.sh` follows it and checks the app title. Cloud
+  `agx64` discovery and a `gemma4-2b-131k:latest` completion passed;
+  `qwen3-vl-4b-65k:latest` returned empty content because reasoning consumed
+  the 1,200-token cap (`finish_reason=length`, `completion_tokens=1200`); a
+  4,096-token diagnostic did not finish within 300s. The direct gateway
+  completion passed. The provider now reports the cap and finish reason without
+  exposing reasoning text. OpenRouter was
   smoke-tested in headless Chromium on 2026-11-17: live five-question set,
   evaluation, Coach chat, injection refusal, cost display, Markdown export and
   clear all passed. No key was visible. See `DEPLOYMENT.md`.
@@ -44,7 +48,7 @@ tags:
 | Check | Result |
 |---|---|
 | Streamlit Cloud gateway secret | Verified 2026-11-17 by `agx64` discovery and a `gemma4-2b-131k:latest` completion |
-| Streamlit app sharing | Fresh browser load passed; `curl` 303 is a non-browser auth redirect |
+| Streamlit app sharing | Fresh browser load passed; first-hop `curl` 303 is Streamlit's anonymous session bootstrap |
 | Browser smoke | `agx64` discovery and completion passed; thinking model direct check passed |
 | Key safety | No key visible in page controls or exports |
 | Course/card | Still do not push `course`; do not add a `real-life.dev` card |

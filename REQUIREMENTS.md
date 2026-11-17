@@ -115,7 +115,7 @@ live-model quality claim.
 | G1 | GitHub account is `reallife-spark` and is the intended account | `gh auth status` and `gh api user` checked; email scope unavailable | done |
 | G2 | Private repo `interview_app` may be created | explicit user request; created | done |
 | G3 | Course repo push | `git ls-remote` 403; `gh api`/`curl` 404; active account `reallife-spark` vs alias `rmobil` | blocked |
-| G4 | Streamlit Cloud public access | Fresh browser loaded the app on 2026-11-17; `curl` still gets a 303 non-browser auth redirect | done: public browser smoke |
+| G4 | Streamlit Cloud public access | Fresh browser loaded the app on 2026-11-17; followed auth chain ends at 200; first-hop 303 is anonymous bootstrap | done: public browser smoke |
 | G5 | Review booked | user action; course mirror still blocked | planned |
 
 ## Course documents
