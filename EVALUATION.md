@@ -81,9 +81,26 @@ python scripts/evaluate_prompts.py --live --model openai/gpt-6-luna
 ```
 
 Outputs are written to `eval/results.live.csv` and `eval/summary.live.md`.
-They are gitignored. A live result must record its model, date, prompt version
-and actual rows; it is a small sample, not a general benchmark. No live key was
-available for this run.
+They are gitignored. A live result records its model, date, prompt version and
+actual rows; it is a small sample, not a general benchmark.
+
+## Live sample — 2026-11-17
+
+A dated live sample was run with `openai/gpt-6-luna`, 18/18 rows valid, using
+the same three cases. Total observed cost was approximately **$0.0058**.
+
+| Rank | Technique | Average / 10 |
+|---:|---|---:|
+| 1 | `cot` | 9.45 |
+| 2 | `few_shot` | 9.21 |
+| 3 | `chained` | 8.87 |
+| 4 | `zero_shot` | 8.71 |
+| 5 | `role_persona` | 8.45 |
+| 6 | `json_schema` | 7.71 |
+
+This is a three-case sample, not a general model-quality claim. The live sample
+favoured `cot`; the app keeps `json_schema` as the default because it gives the
+parser a stable shape. Try both during the review.
 
 ## Interpretation
 

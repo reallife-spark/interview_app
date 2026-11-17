@@ -23,7 +23,7 @@ A requirement is `done` only after its check passes.
 | R2 | OpenRouter API call | `providers/_lib/openrouter.py`; `/chat/completions` | mocked HTTP test | done |
 | R3 | Course-allowed model | default `openai/gpt-6-luna`; chooser limited to the three listed models | config test | done |
 | R4 | At least five system prompts with different techniques | six techniques behind `PromptLibrary` | prompt tests + `PROMPTS.md` | done |
-| R5 | Check which prompt works best | `scripts/evaluate_prompts.py` + `eval/summary.md` | demo run; live run user-gated | done: offline; live user-gated |
+| R5 | Check which prompt works best | `scripts/evaluate_prompts.py` + `EVALUATION.md` | demo + dated live sample | done |
 | R6 | Defensive system prompt | `prompts/_lib/defensive.py`; `guardrails.py`; stay-on-topic/ignore-override instructions | red-team fixtures | done |
 | R7 | Off-topic and injection demo | `scripts/red_team_prompts.py`; `DEMO.md`; prompt-level tests | demo output captured | done: prompt-level + manual demo |
 | R8 | Real interview-preparation experience | Prepare, Practice, Coach flows | `AppTest` flow assertions | done |
@@ -65,7 +65,7 @@ A requirement is `done` only after its check passes.
 | B6 | LLM chooser | three course models; local models in local mode | UI test | done |
 | B7 | Security guard | soft/strict modes | guardrail test | done |
 | B8 | Full chatbot | Coach tab with history | chat test | done |
-| B9 | Prompt/model evaluation | deterministic rubric; live model run user-gated | eval test | done: offline; live user-gated |
+| B9 | Prompt/model evaluation | deterministic rubric; dated live sample | eval test | done |
 | B10 | Interviewer personas | `PromptLibrary` persona layer; Coach selector | prompt/UI tests | done |
 
 ## Excluded requirements

@@ -129,6 +129,7 @@ Evidence recorded on **2026-11-16** on this host:
   `src/interview_practice/README.md`.
 - Headless Streamlit starts and returns HTTP 200.
 - The offline evaluation runs 18 rows; `json_schema` ranks first at 9.62/10 in the fixture.
+- A dated live sample (2026-11-17) had 18/18 valid rows; `cot` scored 9.45/10 in that sample; it is a small sample, not a general claim.
 - Vault `./scripts/validate.sh` passes.
 
 This is **implemented and tested**, not a live deployment claim.

@@ -52,9 +52,9 @@ three surfaces:
 - Streamlit single-page UI; no Next.js.
 - OpenRouter API call with a course-allowed model. Default:
   `openai/gpt-6-luna`.
-- At least five system prompts with different techniques; the app records which
-  one performs best in the offline fixture, with a live run user-gated by an
-  OpenRouter key.
+- At least five system prompts with different techniques; the app records an
+  offline fixture winner and a dated live sample. Neither is a general
+  model-quality claim.
 - Defensive system prompt: stay on interview preparation, politely decline
   off-topic requests, ignore attempts to override instructions.
 - Job-description field with lightweight retrieval; no vector database.

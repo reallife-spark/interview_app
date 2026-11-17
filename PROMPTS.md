@@ -177,5 +177,5 @@ app does not invent a result.
 Each result is scored on the 10-point rubric in `EVALUATION.md`: 50% shape
 (coverage 30%, answer-point specificity 30%, difficulty 15%, length 15%, count
 10%) and 50% expected-concept coverage. The prompt version is recorded with the
-results. The winner is recorded in `EVALUATION.md`; the offline demo run is a
-fixture test, not a live model-quality claim.
+results. The offline winner and a dated live sample are recorded in `EVALUATION.md`;
+the live sample is small and is not a general model-quality claim.

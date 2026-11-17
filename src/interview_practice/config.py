@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
+from pathlib import Path
 from typing import Literal
 
 ProviderName = Literal["demo", "openrouter", "local"]
@@ -70,7 +71,8 @@ def _load_env_file() -> None:
         from dotenv import load_dotenv
     except ImportError:
         return
-    load_dotenv()
+    project_env = Path(__file__).resolve().parents[2] / ".env"
+    load_dotenv(dotenv_path=project_env, override=False)
 
 
 def _default_provider(has_openrouter_key: bool) -> ProviderName:
@@ -91,13 +93,13 @@ class Settings:
     provider: ProviderName = "demo"
     model: str = DEFAULT_MODEL
     temperature: float = 0.7
-    max_tokens: int = 400
+    max_tokens: int = 1200
     top_p: float = 1.0
     reasoning_effort: str | None = None
     strict_safety: bool = False
     enable_lexical_rag: bool = False
     max_calls: int = 20
-    max_output_tokens: int = 400
+    max_output_tokens: int = 1200
     max_input_chars: int = 8000
     session_cost_cap_usd: float = 0.50
     openrouter_api_key: str = field(default="", repr=False)
@@ -119,13 +121,13 @@ class Settings:
             provider=provider,
             model=model,
             temperature=_env_float("TEMPERATURE", 0.7),
-            max_tokens=_env_int("MAX_OUTPUT_TOKENS", 400),
+            max_tokens=_env_int("MAX_OUTPUT_TOKENS", 1200),
             top_p=_env_float("TOP_P", 1.0),
             reasoning_effort=reasoning,
             strict_safety=_env_bool("STRICT_SAFETY", False),
             enable_lexical_rag=_env_bool("ENABLE_LEXICAL_RAG", False),
             max_calls=_env_int("MAX_CALLS", 20),
-            max_output_tokens=_env_int("MAX_OUTPUT_TOKENS", 400),
+            max_output_tokens=_env_int("MAX_OUTPUT_TOKENS", 1200),
             max_input_chars=_env_int("MAX_INPUT_CHARS", 8000),
             session_cost_cap_usd=_env_float("SESSION_COST_CAP_USD", 0.50),
             openrouter_api_key=openrouter_key,

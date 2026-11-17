@@ -8,6 +8,7 @@ from typing import Any
 import requests
 
 from interview_practice.config import LOCAL_BASE_URL
+from interview_practice.providers._lib.http import prefer_ipv4_session
 from interview_practice.providers.base import (
     Completion,
     CompletionRequest,
@@ -32,7 +33,7 @@ class OpenAILocalProvider:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._default_model = default_model
-        self._session = session or requests.Session()
+        self._session = session or prefer_ipv4_session()
         self._timeout = timeout
 
     def _headers(self) -> dict[str, str]:

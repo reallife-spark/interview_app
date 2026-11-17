@@ -156,7 +156,7 @@ Chat history is not saved to disk.
 | Local model | blank | Local model ID | Leave blank to auto-detect |
 | Prompt technique | JSON schema | How the prompt is structured | JSON schema for reliable parsing; other techniques for comparison |
 | Temperature | 0.7 | Randomness | Lower for consistent questions; higher for variety |
-| Max output tokens | 400 | Maximum reply length | Raise for detailed feedback; lower for cost control |
+| Max output tokens | 1,200 | Maximum reply length | Raise for detailed feedback; lower for cost control |
 | Top-p | 1.0 | Nucleus sampling | Usually leave at 1.0 |
 | Reasoning effort | none | Reasoning budget when supported | Use only when the model supports it |
 | Strict safety | off | Blocks known injection patterns | Turn on for a harder security demo |
