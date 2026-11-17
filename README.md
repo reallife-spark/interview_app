@@ -7,9 +7,10 @@ and uses OpenRouter.
 
 **Public app:** <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
 It was smoke-tested in OpenRouter mode on 2026-11-17; see `DEPLOYMENT.md` for
-the observed checks and cost. A later `curl` check on the same date received an
-auth redirect on re-check. **Public access is required**; re-verify it in a
-browser without a login. No key is in the repository.
+the observed checks and cost. A fresh browser session loaded it on the same
+date, and Cloud `agx64` discovery plus a `gemma4-2b-131k:latest` completion
+passed. `curl` still receives a non-browser 303 auth redirect. No key is in the
+repository.
 
 ## What it demonstrates
 
@@ -149,9 +150,10 @@ Evidence recorded on **2026-11-17** on this host:
 - A dated live sample (2026-11-17) had 18/18 valid rows; `cot` scored 9.45/10 in that sample; it is a small sample, not a general claim.
 - Vault `./scripts/validate.sh` passes.
 
-The public Streamlit URL and the 2026-11-17 OpenRouter smoke were observed from
-this build host. The `agx64` gateway was also checked from this host; the
-Streamlit Cloud gateway secret is still owner-gated. No general live-service or
+The public Streamlit URL loads in a fresh headless browser, and the 2026-11-17
+OpenRouter smoke was observed from this build host. The `agx64` gateway was
+checked directly and through the Cloud app on 2026-11-17; Cloud discovery and a
+`gemma4-2b-131k:latest` completion passed. No general live-service or
 model-quality claim is made.
 
 ## Safety and privacy

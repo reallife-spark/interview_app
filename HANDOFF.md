@@ -24,27 +24,30 @@ tags:
   200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
-  A later curl on 2026-11-17 received a 303 auth redirect; headless Chromium
-  loaded the Streamlit login page, not the app. **Public access is required**
-  and must be fixed in Streamlit sharing settings. OpenRouter was
+  A fresh headless Chromium session loaded the app and sidebar on 2026-11-17.
+  `curl` still gets a 303 to Streamlit auth, so use a browser for the public
+  check. Cloud `agx64` discovery and a `gemma4-2b-131k:latest` completion
+  passed; `qwen3-vl-4b-65k:latest` returned empty content in the UI at the
+  1,200-token cap, while the direct gateway completion passed. OpenRouter was
   smoke-tested in headless Chromium on 2026-11-17: live five-question set,
   evaluation, Coach chat, injection refusal, cost display, Markdown export and
   clear all passed. No key was visible. See `DEPLOYMENT.md`.
 - Project `.env`: absent; the vault-root `.env` is not read. Add the rotated key
   to the project `.env` for local live runs, or to Streamlit Cloud secrets.
 - Gateway: `https://real-life.dev/v1` is implemented; WireGuard handshake and
-  public 401/200 checks passed on 2026-11-17. Streamlit Cloud still needs
-  `LOCAL_BASE_URL` and `LOCAL_API_KEY` in its secrets.
+  public 401/200 checks passed on 2026-11-17. Streamlit Cloud
+  `LOCAL_BASE_URL` and `LOCAL_API_KEY` were verified via discovery and a
+  completion on 2026-11-17.
 
-## Owner actions: public verification
+## Verification record: public app
 
-| Action | Exact requirement |
+| Check | Result |
 |---|---|
-| Streamlit Cloud gateway secret | `LOCAL_BASE_URL=https://real-life.dev/v1`; `LOCAL_API_KEY` from the VPS token |
-| Streamlit app sharing | Make the app **public**; a 303 login redirect is not acceptable |
-| Browser smoke | Demo, OpenRouter, `agx64` discovery and one thinking-model completion |
-| Key safety | No key visible in page, export or error |
-| Course/card | Do not push `course`; do not add a `real-life.dev` card |
+| Streamlit Cloud gateway secret | Verified 2026-11-17 by `agx64` discovery and a `gemma4-2b-131k:latest` completion |
+| Streamlit app sharing | Fresh browser load passed; `curl` 303 is a non-browser auth redirect |
+| Browser smoke | `agx64` discovery and completion passed; thinking model direct check passed |
+| Key safety | No key visible in page controls or exports |
+| Course/card | Still do not push `course`; do not add a `real-life.dev` card |
 
 ## Current blocker
 
@@ -134,8 +137,8 @@ git push -u course main
 ## After the course push
 
 - Update `DEPLOYMENT.md` and the LMS evidence with the actual course URL.
-- Verify the already-configured Streamlit Cloud secret before submission; the
-  public live smoke passed on 2026-11-17.
+- The Streamlit Cloud secret was verified by discovery and completion on
+  2026-11-17; the public live smoke passed.
 - Do not add or claim a `real-life.dev` card; the owner suspended it on
   2026-11-17.
 - Submit and schedule the review.

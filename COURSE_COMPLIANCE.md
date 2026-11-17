@@ -95,14 +95,15 @@ quality claims.
 | H1 full chatbot | Coach tab with history | Done |
 | H2 LangChain | optional `LangChainProvider`; native default | Done: mocked/native default |
 | H3 vector database | Chroma question memory; provider-scoped; duplicate test | Done: Chroma test |
-| H4 open-source model | `agx64` provider and public gateway; 32 models discovered | Done: Cloud secret pending |
+| H4 open-source model | `agx64` provider and public gateway; 32 models discovered | Done: Cloud verified 2026-11-17 |
 | H5 LLM judge | opt-in structured judge; default off | Done: mocked |
 
 The public gateway at `https://real-life.dev/v1` returns 401 without a token and
-200 with it; a thinking-model completion also passes. The Streamlit Cloud secret
-still needs owner confirmation. The public app URL exists but returned a 303
-auth redirect on 2026-11-17; **public sharing is required**. The `real-life.dev`
-project card remains suspended.
+200 with it; a thinking-model completion also passes. The Streamlit Cloud
+configuration was verified on 2026-11-17: discovery returned the gateway models
+and a `gemma4-2b-131k:latest` completion returned `READY`. A fresh browser
+loaded the public app; `curl` still receives a non-browser 303 auth redirect.
+The `real-life.dev` project card remains suspended.
 
 ## Evaluation criteria coverage
 

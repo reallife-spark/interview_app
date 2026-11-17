@@ -31,7 +31,7 @@ A requirement is `done` only after its check passes.
 | R10 | Session-only chat history | `session.py`; no persistence | clear/export tests | done |
 | R11 | Export and clear session | Markdown/JSON export; clear button | `AppTest` test | done |
 | R12 | Demo mode | deterministic fixtures; default when no key | provider test | done |
-| R13 | Local `agx64` mode | OpenAI-compatible provider; public gateway `https://real-life.dev/v1`; auto-detect `/v1/models` | mocked local test; public 401/200 and 32-model discovery on 2026-11-17 | done: gateway verified from build host; Cloud secret pending |
+| R13 | Local `agx64` mode | OpenAI-compatible provider; public gateway `https://real-life.dev/v1`; auto-detect `/v1/models` | mocked local test; public 401/200, Cloud discovery and completion on 2026-11-17 | done: gateway and Cloud secret verified |
 | R14 | No silent provider fallback | provider selected explicitly; local failure stays local | provider test | done |
 | R15 | Cost visibility | OpenRouter model metadata + token usage; per-call and session | cost tests | done |
 | R16 | Model settings | model, temperature, `max_tokens`, `top_p`, `reasoning_effort` when supported | UI/config tests | done |
@@ -95,7 +95,7 @@ live-model quality claim.
 | H1 | Full chatbot | Coach tab with session history | done |
 | H2 | LangChain chains | `providers/_lib/langchain.py`; `CHAIN_RUNTIME=langchain`; importorskip test | done: mocked/native default |
 | H3 | Vector database | `retrieval/` Chroma memory; provider-scoped collections; duplicate test | done: Chroma test; no live embedding claim |
-| H4 | Open-source LLM | `agx64` local provider and public gateway; 32 models discovered | done: gateway verified; Cloud secret pending |
+| H4 | Open-source LLM | `agx64` local provider and public gateway; 32 models discovered | done: gateway and Cloud secret verified 2026-11-17 |
 | H5 | LLM-as-judge | opt-in `judge_answer`; structured judge schema; engine test | done: mocked; default off |
 
 ## Originally excluded, now implemented
@@ -115,7 +115,7 @@ live-model quality claim.
 | G1 | GitHub account is `reallife-spark` and is the intended account | `gh auth status` and `gh api user` checked; email scope unavailable | done |
 | G2 | Private repo `interview_app` may be created | explicit user request; created | done |
 | G3 | Course repo push | `git ls-remote` 403; `gh api`/`curl` 404; active account `reallife-spark` vs alias `rmobil` | blocked |
-| G4 | Streamlit Cloud public access | URL exists; 2026-11-17 `curl` returned a 303 auth redirect; public sharing is required | partial: owner action |
+| G4 | Streamlit Cloud public access | Fresh browser loaded the app on 2026-11-17; `curl` still gets a 303 non-browser auth redirect | done: public browser smoke |
 | G5 | Review booked | user action; course mirror still blocked | planned |
 
 ## Course documents
@@ -135,6 +135,6 @@ live-model quality claim.
 - A live OpenRouter run must record model, date, prompt variant and observed
   output; no aggregate claim beyond the sample.
 - Local `agx64` checks prove that path only. The public gateway was verified
-  from the build host on 2026-11-17; the Streamlit Cloud secret is not yet
-  confirmed.
+  from the build host on 2026-11-17; the Streamlit Cloud secret was verified
+  by discovery and a completion on 2026-11-17.
 - `03_Sources/` is read-only after capture.

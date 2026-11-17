@@ -209,11 +209,16 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 - No key-shaped value appeared in the rendered text or export.
 - This is an automated headless smoke test on 2026-11-17, not a manual
   reviewer test.
-- Re-check on 2026-11-17 at 10:46 UTC: `curl` receives a 303 redirect to
-  `share.streamlit.io/-/auth/app`, so the URL is currently login-gated from
-  this host. **Public access is required.** Headless Chromium also lands on the
-  Streamlit login page (`<title>Streamlit`), not the app. Fix the Streamlit
-  sharing setting before claiming public access.
+- Re-check on 2026-11-17 at 13:49 UTC: a fresh headless Chromium session loaded
+  the app and its sidebar, so the URL is public in a browser. `curl` still
+  receives a 303 redirect to `share.streamlit.io/-/auth/app`; that is a
+  non-browser auth redirect and is not the public check.
+- Cloud discovery passed at 13:49 UTC: `GET /v1/models` returned 200 from
+  `python-requests`, and the `agx64` options appeared in the app.
+- Browser completion with `gemma4-2b-131k:latest` returned `READY` and recorded
+  `Calls 1/20`. `qwen3-vl-4b-65k:latest` returned an empty content response in
+  the UI with the 1,200-token cap; the same model passed a direct gateway
+  completion. Use a non-thinking model for a short UI smoke.
 
 ## agx64 public gateway (2026-11-17)
 
@@ -229,8 +234,9 @@ LOCAL_BASE_URL = "https://real-life.dev/v1"
 LOCAL_API_KEY = "the server-side gateway token"
 ```
 
-The Cloud secret has **not** been verified from this host. The gateway checks
-above were run from the build host on 2026-11-17. A repeatable check is
+The Cloud secret was verified on 2026-11-17 by discovery and a completion from
+the public app; no key appeared in the page controls. The gateway checks above
+were also run from the build host. A repeatable local check is
 `LOCAL_API_KEY=... ./scripts/smoke_gateway.sh`. The `real-life.dev` card remains
 suspended.
 
