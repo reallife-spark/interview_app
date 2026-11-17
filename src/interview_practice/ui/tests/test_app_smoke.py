@@ -34,6 +34,21 @@ def test_model_selector_is_visible(monkeypatch) -> None:
     assert any(value.startswith("OpenRouter -") for value in selector.options)
 
 
+def test_local_model_option_can_be_selected(monkeypatch) -> None:
+    monkeypatch.setenv("PROVIDER", "demo")
+    monkeypatch.setenv("LOCAL_MODEL", "qwen3.6-35b-262k-q8")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    at = AppTest.from_file(APP, default_timeout=30).run()
+    assert not at.exception
+    selector = next(item for item in at.selectbox if item.key == "model_selection")
+    assert any(value.startswith("agx64 - ") for value in selector.options)
+    selector.select("local:qwen3.6-35b-262k-q8").run()
+    assert not at.exception
+    assert any(
+        "agx64 gateway" in caption.value for caption in at.sidebar.caption
+    )
+
+
 def test_persona_selector_is_visible(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     assert any(item.key == "interviewer_persona" for item in at.selectbox)

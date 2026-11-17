@@ -85,7 +85,10 @@ This runs tests, Ruff and the import-boundary gate.
 | **OpenRouter** | Yes | Required | Live model calls through OpenRouter |
 | **Local agx64** | Local tunnel | Optional | Developer checks against an OpenAI-compatible endpoint |
 
-The mode is selected under **Settings → Developer settings → Provider**.
+The mode is selected with the single **Model** selector under
+**Settings → Developer settings**. It lists Demo, the three OpenRouter course
+models and any discovered `agx64` models. In `agx64` mode, use **Discover agx64
+models** to refresh the list from the configured gateway.
 
 There is **no silent fallback** from local mode to OpenRouter. If a local call
 fails, the app reports the failure; it does not send a private job description
@@ -106,10 +109,10 @@ to a remote provider.
 
 ### Sidebar
 
-- **Provider** — Demo, OpenRouter or Local.
-- **OpenRouter model** — the three course models.
-- **Local model** — optional model ID; blank means auto-detect from
-  `/v1/models`.
+- **Model** — one selector for Demo, the three OpenRouter course models and
+  discovered `agx64` models. Choosing `agx64` never falls back to OpenRouter.
+- **Discover agx64 models** — lazy refresh of the local model list from the
+  configured gateway.
 - **Prompt technique** — the six prompt variants.
 - **Temperature**, **Max output tokens**, **Top-p** — model settings.
 - **Reasoning effort** — available in OpenRouter mode.
@@ -151,9 +154,9 @@ Chat history is not saved to disk.
 
 | Setting | Default | What it changes | Practical guidance |
 |---|---|---|---|
-| Provider | Demo | Which provider is used | Demo for a keyless review; OpenRouter for live calls |
+| Model | Demo | Provider and model in one choice | Demo for a keyless review; OpenRouter for live calls; `agx64` for the local path |
 | OpenRouter model | `openai/gpt-6-luna` | Model quality, speed and price | Start with the recommended default |
-| Local model | blank | Local model ID | Leave blank to auto-detect |
+| Discover agx64 models | n/a | Refreshes the local model list | Run once after the gateway is up |
 | Prompt technique | JSON schema | How the prompt is structured | JSON schema for reliable parsing; other techniques for comparison |
 | Temperature | 0.7 | Randomness | Lower for consistent questions; higher for variety |
 | Max output tokens | 1,200 | Maximum reply length | Raise for detailed feedback; lower for cost control |
