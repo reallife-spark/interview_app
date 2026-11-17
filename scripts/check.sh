@@ -4,6 +4,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
 
-python -m pytest -q
-ruff check .
-lint-imports
+if [[ -x .venv/bin/python ]]; then
+  PYTHON=.venv/bin/python
+else
+  PYTHON=python3
+fi
+
+"$PYTHON" -m pytest -q
+"$PYTHON" -m ruff check .
+"$PYTHON" -m importlinter.cli lint-imports

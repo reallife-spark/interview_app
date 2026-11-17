@@ -135,3 +135,38 @@ def test_settings_reject_invalid_caps() -> None:
         Settings(max_calls=0).validate()
     with pytest.raises(ValueError, match="session_cost_cap_usd"):
         Settings(session_cost_cap_usd=-1).validate()
+
+
+def test_model_options_cover_demo_openrouter_and_local() -> None:
+    from interview_practice.config import (
+        apply_model_selection,
+        model_options,
+        selection_for_settings,
+    )
+
+    options = model_options(["qwen3.6-35b-262k-q8"], configured_local_model="")
+    assert options[0].key == "demo"
+    assert any(option.provider == "openrouter" for option in options)
+    assert any(option.key == "local:qwen3.6-35b-262k-q8" for option in options)
+    selected = next(option for option in options if option.provider == "local")
+    settings = apply_model_selection(Settings(provider="demo"), selected)
+    assert settings.provider == "local"
+    assert settings.local_model == "qwen3.6-35b-262k-q8"
+    assert selection_for_settings(settings) == "local:qwen3.6-35b-262k-q8"
+
+
+def test_model_selection_is_explicit() -> None:
+    from interview_practice.config import ModelSelection, apply_model_selection
+
+    settings = apply_model_selection(
+        Settings(provider="local", local_model="old"),
+        ModelSelection(
+            key="openrouter:openai/gpt-6-luna",
+            label="OpenRouter - openai/gpt-6-luna",
+            provider="openrouter",
+            model="openai/gpt-6-luna",
+        ),
+    )
+    assert settings.provider == "openrouter"
+    assert settings.model == "openai/gpt-6-luna"
+    assert settings.local_model == ""

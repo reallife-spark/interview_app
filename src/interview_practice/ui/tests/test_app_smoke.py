@@ -27,6 +27,13 @@ def test_app_renders_in_demo_mode(monkeypatch) -> None:
     assert any(item.value == "demo" for item in at.selectbox)
 
 
+def test_model_selector_is_visible(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    selector = next(item for item in at.selectbox if item.key == "model_selection")
+    assert any(value.startswith("Demo -") for value in selector.options)
+    assert any(value.startswith("OpenRouter -") for value in selector.options)
+
+
 def test_persona_selector_is_visible(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     assert any(item.key == "interviewer_persona" for item in at.selectbox)
