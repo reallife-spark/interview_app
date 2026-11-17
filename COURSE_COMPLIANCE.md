@@ -110,8 +110,9 @@ matrix so the gap is visible.
 
 - The Turing College repository is not writable by the active `reallife-spark`
   account; the course mirror and reviewer access are blocked.
-- Streamlit Cloud deployment, **Submit Project** and review scheduling are
-  user-gated.
+- The public Streamlit app is deployed, but it currently renders in **Demo —
+  no key**; the OpenRouter live path, **Submit Project** and review scheduling
+  are user-gated.
 - The project `.env` is absent; the deployment secret must be added by the owner
   before the public live smoke test.
 - Unauthenticated access to the LMS page returns 404; the user-pasted text is

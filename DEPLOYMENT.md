@@ -36,8 +36,10 @@ student GitHub identity is active and the LMS GitHub URL is confirmed. See
 root has an `.env`, but this app intentionally loads only its own project
 `.env`; the root file is not read. Add the rotated key to
 `/mnt/knowledge/AIengin/06_Projects/interview-practice-app/.env` for local live
-testing, or to Streamlit Cloud secrets for the public app. No public deployment
-exists yet.
+testing, or to Streamlit Cloud secrets for the public app. The public app is
+live at
+<https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>; it currently renders
+with **Demo — no key**, so the OpenRouter secret is not loaded.
 
 ## Local setup
 
@@ -162,8 +164,8 @@ The private repo is the backup.
    ```
 
    The committed template is `.streamlit/secrets.toml.example`.
-8. Deploy. Streamlit will assign a public URL; record it in this file and
-   `HANDOFF.md` after it loads.
+8. Deploy. Public URL (recorded 2026-11-17):
+   <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
 9. Open the public URL and verify:
    - the page loads without a server error;
    - **Demo** provider works with no network;
@@ -187,6 +189,20 @@ PYTHONPATH=src python -c "from interview_practice.config import Settings; s=Sett
 
 For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 `st.secrets`; the app merges them in `_runtime_settings()`.
+
+### Public smoke status (2026-11-17)
+
+- The URL renders in headless Chromium from this host; title:
+  `Interview Practice Coach · Streamlit`.
+- The app iframe renders the Prepare/Practice/Coach UI.
+- Provider is **`Demo — no key`**; a demo question set rendered successfully.
+- This is not a live OpenRouter smoke test. The app selects OpenRouter by
+  default when `OPENROUTER_API_KEY` is present; seeing Demo indicates the
+  Streamlit secret is missing (or the provider was explicitly forced to demo).
+- Still unverified on the public app: live OpenRouter question set, answer
+  evaluation, Coach chat, safety refusal/block, cost display, export and clear.
+- **Owner action:** add `OPENROUTER_API_KEY` in the Streamlit Cloud app settings,
+  save/reboot, then re-check that the provider switches to OpenRouter.
 
 Streamlit Cloud cannot reach the local `agx64` tunnel. Local mode is documented
 as a developer path only.
@@ -234,10 +250,13 @@ cancellation does not refund it. The LMS page is authoritative.
 
 ## What is not verified here
 
-- No public Streamlit deployment has been created from this host.
-- A dated OpenRouter live sample was run on 2026-11-17; the public deployment is still user-gated.
+- The public Streamlit page is deployed and rendered in headless Chromium on
+  2026-11-17; it is currently **Demo only**, not a live OpenRouter smoke test.
+- A dated OpenRouter live sample was run locally on 2026-11-17; the public
+  OpenRouter path is still blocked on the Streamlit secret.
 - No `real-life.dev` deployment was made.
 - No course submission or review was completed.
 - The project `.env` is absent; the key must be placed there by the owner for
-  local live runs, or in Streamlit Cloud secrets for the public app.
+  local live runs, or in Streamlit Cloud secrets for the public app. The public
+  app currently shows Demo, so the Streamlit secret is not configured.
 - These are user actions with their own credentials and confirmation gates.

@@ -5,6 +5,10 @@ generates role-specific questions, evaluates written answers, and provides a
 multi-turn coaching conversation. It is the Turing College Sprint 1 project
 and uses OpenRouter.
 
+**Public app:** <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
+It currently renders in **Demo** mode; add `OPENROUTER_API_KEY` in Streamlit
+Cloud secrets for live model calls.
+
 ## What it demonstrates
 
 - A real Streamlit UI with **Prepare**, **Practice** and **Coach** surfaces.
