@@ -22,6 +22,10 @@ tags:
   account is `reallife-spark`.
 - Checks: 79 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
+- Public deployment: **pending owner action**; exact Streamlit Cloud runbook in
+  `DEPLOYMENT.md`.
+- Project `.env`: absent; the vault-root `.env` is not read. Add the rotated key
+  to the project `.env` for local live runs, or to Streamlit Cloud secrets.
 
 ## Current blocker
 

@@ -32,6 +32,13 @@ repository alias is `rmobil`. The course mirror is blocked until the correct
 student GitHub identity is active and the LMS GitHub URL is confirmed. See
 `HANDOFF.md`.
 
+**Deployment preflight (2026-11-17):** the project `.env` is absent. The vault
+root has an `.env`, but this app intentionally loads only its own project
+`.env`; the root file is not read. Add the rotated key to
+`/mnt/knowledge/AIengin/06_Projects/interview-practice-app/.env` for local live
+testing, or to Streamlit Cloud secrets for the public app. No public deployment
+exists yet.
+
 ## Local setup
 
 ```bash
@@ -132,23 +139,54 @@ The private repo is the backup.
 
 ## Streamlit Community Cloud
 
-1. Sign in to Streamlit Community Cloud with the GitHub account that can read the
-   repository.
-2. Create a new app from the repository.
-3. Entry point: `app.py`.
-4. Add secrets in the Streamlit app settings:
+### Exact deployment runbook
+
+1. Sign in to <https://share.streamlit.io> with the GitHub account
+   `reallife-spark`. A convenience link is
+   <https://share.streamlit.io/deploy?repository=reallife-spark/interview_app&branch=main&mainModule=app.py>.
+2. Choose **Create app** → **Deploy a public app from GitHub**.
+3. Repository: `reallife-spark/interview_app`.
+4. Branch: `main`.
+5. Main file path: `app.py`.
+6. Advanced settings → Python version: **3.12**. The repository also carries
+   `runtime.txt` with `python-3.12`.
+7. Add these secrets in the Streamlit app settings. Use placeholders locally;
+   never commit real values:
 
    ```toml
    OPENROUTER_API_KEY = "your-key-here"
    OPENROUTER_MODEL = "openai/gpt-6-luna"
+   MAX_OUTPUT_TOKENS = 1200
+   MAX_CALLS = 20
+   SESSION_COST_CAP_USD = 0.50
    ```
 
-5. Deploy.
-6. Open the public URL and verify:
-   - the page loads;
-   - Demo mode works without a key;
-   - OpenRouter mode works with the key;
-   - no key or job description appears in the page text or an export.
+   The committed template is `.streamlit/secrets.toml.example`.
+8. Deploy. Streamlit will assign a public URL; record it in this file and
+   `HANDOFF.md` after it loads.
+9. Open the public URL and verify:
+   - the page loads without a server error;
+   - **Demo** provider works with no network;
+   - **OpenRouter** provider works with the secret and can generate a question
+     set;
+   - one answer evaluation and one Coach message work;
+   - off-topic refusal and soft/strict injection behaviour are visible;
+   - the last-call cost/tokens/latency and session cap are visible;
+   - Markdown/JSON export and Clear session work;
+   - no key or job description appears in the page, export or error.
+
+### Deployment preflight commands
+
+```bash
+test -f .env && stat -c '.env mode=%a' .env
+git check-ignore .env
+test -z "$(git ls-files .env)"
+PYTHONPATH=src python -c "from interview_practice.config import Settings; s=Settings.from_env(); print(s.provider, s.model, bool(s.openrouter_api_key))"
+./scripts/check.sh
+```
+
+For the public app, `.env` is not present. Streamlit Cloud reads secrets through
+`st.secrets`; the app merges them in `_runtime_settings()`.
 
 Streamlit Cloud cannot reach the local `agx64` tunnel. Local mode is documented
 as a developer path only.
@@ -196,8 +234,10 @@ cancellation does not refund it. The LMS page is authoritative.
 
 ## What is not verified here
 
-- No public Streamlit deployment was created from this host.
+- No public Streamlit deployment has been created from this host.
 - A dated OpenRouter live sample was run on 2026-11-17; the public deployment is still user-gated.
 - No `real-life.dev` deployment was made.
 - No course submission or review was completed.
+- The project `.env` is absent; the key must be placed there by the owner for
+  local live runs, or in Streamlit Cloud secrets for the public app.
 - These are user actions with their own credentials and confirmation gates.

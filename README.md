@@ -154,7 +154,8 @@ This is **implemented and tested**, not a live deployment claim.
 - `SECURITY.md` — threat model, controls, OWASP mapping and limits.
 - `EVALUATION.md` — prompt comparison method and offline result.
 - `DEMO.md` — a five-minute review script.
-- `DEPLOYMENT.md` — local setup, Streamlit Cloud, GitHub remotes and submission.
+- `DEPLOYMENT.md` — local setup, Streamlit Cloud runbook, GitHub remotes and submission.
+- `.streamlit/secrets.toml.example` — secret names for Streamlit Cloud, no values.
 - `HANDOFF.md` — current repo state and the course-access blocker.
 - `COURSE_COMPLIANCE.md` — Sprint 1 requirement and link coverage.
 - `BRIEF.md` and `REQUIREMENTS.md` — course mapping and status.
