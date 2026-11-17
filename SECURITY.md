@@ -1,6 +1,6 @@
 ---
 title: Security — Interview Practice App
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 03_Sources/ai-engineering/web/web-simon-willison-prompt-injection.md
@@ -30,7 +30,9 @@ Threats considered:
 6. **Unsafe output handling** when parsing model JSON.
 
 Out of scope: multi-user isolation, a public API, file uploads, tool execution,
-browsing, and any offensive-security capability.
+browsing, and any offensive-security capability. The optional public `agx64`
+gateway is an infrastructure path with a bearer token, not a user login or a
+general-purpose proxy.
 
 ## Controls
 
@@ -47,7 +49,14 @@ browsing, and any offensive-security capability.
 | JSON parser + schemas | `prompts/schemas.py` | Invalid JSON or missing keys becomes a recoverable error |
 | Call cap | `session.py` | Default 20 calls per session |
 | Cost cap | `session.py` | Default `$0.50` per session |
-| Output cap | `session.py` / provider | Default 400 output tokens |
+| Output cap | `session.py` / provider | Default 1,200 output tokens |
+| Field caps | `engine.py` | Role 120, question 500, answer/chat 4,000 characters |
+| Process-wide budget | `session.py` | Daily calls/cost and per-minute rate guard |
+| Prompt integrity | `prompts/integrity.py` | Runtime check for required defensive markers |
+| Gateway token | VPS nginx | Bearer check on `/v1/*`; no direct `11434` |
+| XLSX formula safety | `reports.py` | Formula-leading text is prefixed with an apostrophe |
+| Question memory | `retrieval/` | Stores only generated question text, provider-scoped |
+| Image/judge opt-in | `imagegen.py` / `engine.py` | Disabled by default; one image per action |
 | No local fallback | `providers/__init__.py` | Local failure stays local; no private data leaves the host silently |
 | Key handling | `config.py` + `.env.example` | Keys are `repr=False`, never written to the page |
 | Red-team fixtures | `tests/fixtures/red_team.json` | Reproducible safe checks |

@@ -21,6 +21,16 @@ class SchemaError(ValueError):
     """The model output did not match the promised JSON shape."""
 
 
+RUBRIC_KEYS = {
+    "technical_depth",
+    "problem_solving",
+    "communication",
+    "role_fit",
+    "collaboration",
+    "ownership",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class Question:
     id: str
@@ -70,6 +80,64 @@ class AnswerEvaluation:
             "gaps": list(self.gaps),
             "improved_answer": self.improved_answer,
             "next_steps": list(self.next_steps),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class RubricCriterion:
+    key: str
+    label: str
+    weight: int
+    descriptors: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "label": self.label,
+            "weight": self.weight,
+            "descriptors": list(self.descriptors),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class JudgeCriterion:
+    name: str
+    score: int
+    rationale: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "score": self.score,
+            "rationale": self.rationale,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class JudgeScore:
+    score: int
+    verdict: str
+    criteria: tuple[JudgeCriterion, ...]
+    rationale: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "score": self.score,
+            "verdict": self.verdict,
+            "criteria": [item.to_dict() for item in self.criteria],
+            "rationale": self.rationale,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class InterviewRubric:
+    role: str
+    criteria: tuple[RubricCriterion, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "role": self.role,
+            "criteria": [criterion.to_dict() for criterion in self.criteria],
         }
 
 
@@ -160,6 +228,89 @@ def validate_answer_evaluation(payload: Mapping[str, Any]) -> AnswerEvaluation:
         improved_answer=_required_text(payload, "improved_answer"),
         next_steps=_text_list(payload, "next_steps"),
     )
+
+
+def validate_judge_score(payload: Mapping[str, Any]) -> JudgeScore:
+    score = payload.get("score")
+    if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= 100:
+        raise SchemaError("judge score must be an integer between 0 and 100")
+    verdict = _required_text(payload, "verdict")
+    rationale = _required_text(payload, "rationale")
+    raw_criteria = payload.get("criteria")
+    if not isinstance(raw_criteria, list) or not 2 <= len(raw_criteria) <= 6:
+        raise SchemaError("judge criteria must contain 2 to 6 items")
+    criteria = []
+    for index, raw in enumerate(raw_criteria):
+        if not isinstance(raw, Mapping):
+            raise SchemaError(f"judge criterion {index} must be an object")
+        item_score = raw.get("score")
+        if (
+            not isinstance(item_score, int)
+            or isinstance(item_score, bool)
+            or not 0 <= item_score <= 100
+        ):
+            raise SchemaError(f"judge criterion {index} score must be 0-100")
+        criteria.append(
+            JudgeCriterion(
+                name=_required_text(raw, "name"),
+                score=item_score,
+                rationale=_required_text(raw, "rationale"),
+            )
+        )
+    return JudgeScore(
+        score=score,
+        verdict=verdict,
+        criteria=tuple(criteria),
+        rationale=rationale,
+    )
+
+
+def validate_interview_rubric(payload: Mapping[str, Any]) -> InterviewRubric:
+    role = _required_text(payload, "role")
+    raw_criteria = payload.get("criteria")
+    if not isinstance(raw_criteria, list) or not 4 <= len(raw_criteria) <= 6:
+        raise SchemaError("criteria must contain 4 to 6 items")
+    criteria: list[RubricCriterion] = []
+    seen: set[str] = set()
+    total = 0
+    for index, raw in enumerate(raw_criteria):
+        if not isinstance(raw, Mapping):
+            raise SchemaError(f"criterion {index} must be an object")
+        key = _required_text(raw, "key")
+        if key not in RUBRIC_KEYS:
+            raise SchemaError(f"unknown rubric key: {key}")
+        if key in seen:
+            raise SchemaError(f"duplicate rubric key: {key}")
+        seen.add(key)
+        weight = raw.get("weight")
+        if (
+            not isinstance(weight, int)
+            or isinstance(weight, bool)
+            or not 1 <= weight <= 100
+        ):
+            raise SchemaError(f"criterion {index} weight must be 1-100")
+        descriptors = raw.get("descriptors")
+        if not isinstance(descriptors, list) or len(descriptors) < 2:
+            raise SchemaError(f"criterion {index} needs two descriptors")
+        clean = tuple(
+            value.strip()
+            for value in descriptors
+            if isinstance(value, str) and value.strip()
+        )
+        if len(clean) != len(descriptors):
+            raise SchemaError(f"criterion {index} has invalid descriptors")
+        total += weight
+        criteria.append(
+            RubricCriterion(
+                key=key,
+                label=_required_text(raw, "label"),
+                weight=weight,
+                descriptors=clean,
+            )
+        )
+    if total != 100:
+        raise SchemaError("rubric weights must total 100")
+    return InterviewRubric(role=role, criteria=tuple(criteria))
 
 
 def _required_text(payload: Mapping[str, Any], key: str) -> str:

@@ -1,0 +1,62 @@
+# Example locations for the existing real-life.dev server block.
+# Keep the bearer token in /etc/nginx/conf.d/agx64-gateway-map.conf, not here.
+
+location = /healthz {
+    access_log off;
+    add_header Content-Type text/plain always;
+    return 200 "ok\n";
+}
+
+location = /v1/models {
+    limit_except GET { deny all; }
+    limit_req zone=agx64_gateway burst=20 nodelay;
+    if ($agx64_authorized = 0) { return 401; }
+    client_max_body_size 1m;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header Authorization "";
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+    proxy_pass http://10.66.0.2:11434;
+}
+
+location = /v1/chat/completions {
+    limit_except POST { deny all; }
+    limit_req zone=agx64_gateway burst=20 nodelay;
+    if ($agx64_authorized = 0) { return 401; }
+    client_max_body_size 1m;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header Authorization "";
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+    proxy_pass http://10.66.0.2:11434;
+}
+
+location = /v1/embeddings {
+    limit_except POST { deny all; }
+    limit_req zone=agx64_gateway burst=20 nodelay;
+    if ($agx64_authorized = 0) { return 401; }
+    client_max_body_size 1m;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header Authorization "";
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_buffering off;
+    proxy_request_buffering off;
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+    proxy_pass http://10.66.0.2:11434;
+}

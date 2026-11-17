@@ -65,20 +65,21 @@ three surfaces:
 
 ## Bonus scope
 
-Five medium tasks and one hard task:
+Phase 16 implements all optional tasks (E1–E8, M1–M9, H1–H5), not only the
+original five-medium/one-hard target:
 
-- All model settings: model, temperature, `max_tokens`, `top_p`,
-  `reasoning_effort` when supported.
-- Two JSON formats: `QuestionSet` and `AnswerEvaluation`.
-- Price estimate from OpenRouter model metadata.
-- Job-description tailoring with hybrid RAG-lite (BM25 + hashed vectors + RRF).
-- Model chooser limited to the three course models.
-- Security guard with soft-flag default and a strict toggle.
-- Full multi-turn chatbot.
+- All model settings and a unified model chooser.
+- `QuestionSet`, `AnswerEvaluation`, `InterviewRubric` and `JudgeScore` JSON.
+- Prompt pricing, capability-aware catalog and a dated live sample.
+- Job-description tailoring with hybrid RAG-lite.
+- Security guard with soft/strict modes and developer-setting separation.
+- Full multi-turn chatbot and interviewer personas.
+- Excel red-team report, opt-in image generation, optional LangChain, optional
+  Chroma question memory, and an opt-in LLM judge.
+- Public `agx64` path through the authenticated `real-life.dev` gateway.
 
-Excluded: image generation, Excel jailbreak report, LangChain, vector database,
-open-source-only model requirement. These are deliberate scope decisions, not
-unfinished work.
+No live image, judge, embedding or model-quality claim is made from the mocked
+tests. The course mirror remains deferred.
 
 ## Prompt techniques
 

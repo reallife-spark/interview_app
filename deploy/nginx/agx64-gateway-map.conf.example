@@ -1,0 +1,10 @@
+# Install outside the repo with mode 0640 root:www-data.
+# Replace REPLACE_WITH_GATEWAY_TOKEN from /etc/nginx/agx64-gateway-token.
+map_hash_bucket_size 128;
+
+map $http_authorization $agx64_authorized {
+    default 0;
+    "Bearer REPLACE_WITH_GATEWAY_TOKEN" 1;
+}
+
+limit_req_zone $binary_remote_addr zone=agx64_gateway:10m rate=30r/m;

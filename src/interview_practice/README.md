@@ -1,6 +1,6 @@
 ---
 title: interview_practice — module boundaries
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # `interview_practice` module boundaries
@@ -21,17 +21,24 @@ interview_practice/
   tailoring.py             public root module: build_tailored_context
   session.py               public root module: SessionState
   evaluation.py            public root module: evaluation runners
+  reports.py               public root module: XLSX report builder
+  imagegen.py              public root module: opt-in image action
   messages.py              public root module: ChatMessage
   providers/
     __init__.py            entry point: build_provider + public types
     base.py                public contract: Provider, CompletionRequest, Completion
     _lib/                  private adapters: openrouter, local, demo
     tests/                 black-box provider tests
+  retrieval/
+    __init__.py            entry point: QuestionMemory + MemoryUnavailable
+    _lib/                  private Chroma implementation
+    tests/                 black-box Chroma tests (importorskip)
   prompts/
     __init__.py            entry point: PromptLibrary + technique options
     techniques.py          public Technique record
     schemas.py             public QuestionSet/AnswerEvaluation and parsers
     _lib/                  private catalog, templates, defensive prompt, library
+    integrity.py           public system-prompt integrity checks
     tests/                 black-box prompt tests
   ui/
     __init__.py            entry point: render_app
@@ -48,9 +55,9 @@ interview_practice/
    They never import `_lib`, even their own.
 4. No dependency cycles between packages.
 
-`prompts/schemas.py` is deliberately public: `QuestionSet` and
-`AnswerEvaluation` are interface types used by the engine, session and
-evaluation. Do not move it into `_lib`.
+`prompts/schemas.py` is deliberately public: `QuestionSet`,
+`AnswerEvaluation`, `InterviewRubric` and `JudgeScore` are interface types used
+by the engine, session, report and UI. Do not move it into `_lib`.
 
 ## No barrel
 
@@ -69,9 +76,16 @@ Run the repository gate:
 It runs:
 
 ```bash
-python -m pytest -q
-ruff check .
-PYTHONPATH=src lint-imports
+./scripts/check.sh
+```
+
+`check.sh` selects `.venv/bin/python` when present, then runs pytest, Ruff and
+the import gate. The raw commands are:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check .
+.venv/bin/lint-imports
 ```
 
 The import-linter root package is `interview_practice`; `src/packages/` is not

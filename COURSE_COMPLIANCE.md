@@ -1,6 +1,6 @@
 ---
 title: Turing College Sprint 1 — compliance map
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 03_Sources/turing-college/sprint-1-course-status-2026-11-16.md
@@ -67,8 +67,40 @@ user-pasted text is authoritative.
 | Interviewer personas | strict/neutral/friendly selector; `PromptLibrary.chat(..., persona=...)` | Done |
 | Assessment via LLM-as-judge or other | deterministic rubric; dated live sample; no judge score claimed | Done |
 
-Excluded by scope decision: image generation, Excel jailbreak report, LangChain,
-vector database, open-source-only model. These are not unfinished tasks.
+## Optional task completion (Phase 16)
+
+All easy, medium and hard optional tasks are implemented or explicitly
+evidenced. The evidence is code plus tests; mocked tests are not live-model
+quality claims.
+
+| Task | Evidence | Status |
+|---|---|---|
+| E1 critique | `APP_CRITIQUE.md` | Done |
+| E2 domain profiles | `prompts/domains.py`; domain tests | Done |
+| E3 prompt integrity and input caps | `prompts/integrity.py`; `engine.py` field caps; tests | Done |
+| E4 difficulty | Prepare selector; schema tests | Done |
+| E5 response styles | `prompts/styles.py`; style tests | Done |
+| E6 interviewer rubric | `InterviewRubric`; engine/UI; rubric tests | Done |
+| E7 personas | Coach selector; persona tests | Done |
+| E8 setting comparison | `scripts/compare_settings.py --demo` | Done |
+| M1 all model settings | sidebar controls and config tests | Done |
+| M2 JSON formats | questions, evaluation, rubric, judge schemas | Done |
+| M3 prompt price | catalog pricing and usage/cost display | Done |
+| M4 OpenRouter improvement | capability-aware catalog and unified selector | Done |
+| M5 Excel jailbreak report | `reports.py`; CLI; workbook download/test | Done |
+| M6 job-description RAG | `tailoring.py`; hybrid RAG-lite tests | Done |
+| M7 LLM chooser | unified Model selector; OpenRouter + `agx64` | Done |
+| M8 image generation | `imagegen.py`; opt-in OpenRouter action; mocked test | Done: mocked |
+| M9 security guard and developer separation | `guardrails.py`; Developer settings; tests | Done |
+| H1 full chatbot | Coach tab with history | Done |
+| H2 LangChain | optional `LangChainProvider`; native default | Done: mocked/native default |
+| H3 vector database | Chroma question memory; provider-scoped; duplicate test | Done: Chroma test |
+| H4 open-source model | `agx64` provider and public gateway; 32 models discovered | Done: Cloud secret pending |
+| H5 LLM judge | opt-in structured judge; default off | Done: mocked |
+
+The public gateway at `https://real-life.dev/v1` returns 401 without a token and
+200 with it; the Streamlit Cloud secret still needs owner confirmation. The
+`real-life.dev` project card remains suspended.
 
 ## Evaluation criteria coverage
 

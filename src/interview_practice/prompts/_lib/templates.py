@@ -40,6 +40,15 @@ ANSWER_EVALUATION_SCHEMA_HINT = """{
   "next_steps": ["string"]
 }"""
 
+JUDGE_SCHEMA_HINT = """{
+  "score": 0,
+  "verdict": "string",
+  "criteria": [
+    {"name": "string", "score": 0, "rationale": "string"}
+  ],
+  "rationale": "string"
+}"""
+
 RUBRIC_SCHEMA_HINT = """{
   "role": "string",
   "criteria": [
@@ -207,6 +216,38 @@ def rubric_messages(
         ChatMessage(
             "system",
             build_system_prompt("role_persona", canary, domain=domain, style=style),
+        ),
+        ChatMessage("user", user),
+    ]
+
+
+def judge_messages(
+    *,
+    question: str,
+    answer: str,
+    evaluation_json: str,
+    canary: str,
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
+) -> list[ChatMessage]:
+    user = dedent(
+        f"""
+        <Task>Judge this interview answer independently.</Task>
+        <Question>{escape(question.strip() or "Not provided")}</Question>
+        <Answer>{escape(answer.strip() or "Not provided")}</Answer>
+        <FirstPassEvaluation>
+        {escape(evaluation_json or "Not provided")}
+        </FirstPassEvaluation>
+
+        Score correctness, structure, evidence and role fit. Be strict but fair.
+        Return only JSON matching this shape:
+        {JUDGE_SCHEMA_HINT}
+        """
+    ).strip()
+    return [
+        ChatMessage(
+            "system",
+            build_system_prompt("json_schema", canary, domain=domain, style=style),
         ),
         ChatMessage("user", user),
     ]

@@ -20,7 +20,8 @@ tags:
 - Course remote: `https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5.git`
 - Course alias `rmobil` is a public GitHub user (`Mobil`); the active `gh`
   account is `reallife-spark`.
-- Checks: 79 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
+- Checks: 100+ tests, Ruff 0, 8 import-linter contracts, headless Streamlit HTTP
+  200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: live at
   <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>. OpenRouter was
@@ -29,6 +30,9 @@ tags:
   clear all passed. No key was visible. See `DEPLOYMENT.md`.
 - Project `.env`: absent; the vault-root `.env` is not read. Add the rotated key
   to the project `.env` for local live runs, or to Streamlit Cloud secrets.
+- Gateway: `https://real-life.dev/v1` is implemented; WireGuard handshake and
+  public 401/200 checks passed on 2026-11-17. Streamlit Cloud still needs
+  `LOCAL_BASE_URL` and `LOCAL_API_KEY` in its secrets.
 
 ## Current blocker
 

@@ -229,6 +229,7 @@ class Settings:
     local_api_key: str = field(default="", repr=False)
     local_model: str = ""
     enable_question_memory: bool = False
+    question_memory_path: str = ".chroma"
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     local_embedding_model: str = DEFAULT_LOCAL_EMBEDDING_MODEL
     question_memory_max_items: int = 500
@@ -280,6 +281,10 @@ class Settings:
             local_api_key=os.getenv("LOCAL_API_KEY", "").strip(),
             local_model=os.getenv("LOCAL_MODEL", "").strip(),
             enable_question_memory=_env_bool("ENABLE_QUESTION_MEMORY", False),
+            question_memory_path=os.getenv(
+                "QUESTION_MEMORY_PATH", ".chroma"
+            ).strip()
+            or ".chroma",
             embedding_model=os.getenv(
                 "EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
             ).strip()
@@ -376,6 +381,7 @@ SECRET_KEYS = frozenset(
         "CHAIN_RUNTIME",
         "EMBEDDING_MODEL",
         "LOCAL_EMBEDDING_MODEL",
+        "QUESTION_MEMORY_PATH",
         "QUESTION_MEMORY_MAX_ITEMS",
         "IMAGE_MODEL",
         "DOMAIN_PROFILE",
@@ -418,6 +424,7 @@ def apply_secret_values(
         ("LOCAL_MODEL", "local_model"),
         ("EMBEDDING_MODEL", "embedding_model"),
         ("LOCAL_EMBEDDING_MODEL", "local_embedding_model"),
+        ("QUESTION_MEMORY_PATH", "question_memory_path"),
         ("IMAGE_MODEL", "image_model"),
         ("DOMAIN_PROFILE", "domain_profile"),
     ):

@@ -10,3 +10,6 @@ __pycache__/
 .DS_Store
 eval/results.live.csv
 eval/summary.live.md
+reports/
+generated-images/
+.chroma/

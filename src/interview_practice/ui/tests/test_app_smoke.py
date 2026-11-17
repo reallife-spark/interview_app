@@ -90,3 +90,12 @@ def test_practice_evaluation_in_demo_mode(monkeypatch) -> None:
     result = at.session_state["e_result"]
     assert 0 <= result.evaluation.score <= 100
     assert result.evaluation.improved_answer
+
+
+def test_generate_rubric_in_demo_mode(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    _button(at, "generate_rubric").click().run()
+    assert not at.exception
+    result = at.session_state["rubric_result"]
+    assert len(result.rubric.criteria) == 4
+    assert sum(item.weight for item in result.rubric.criteria) == 100

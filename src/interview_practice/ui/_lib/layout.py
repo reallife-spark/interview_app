@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from pathlib import Path
 
 import streamlit as st
 
@@ -25,7 +26,9 @@ from interview_practice.engine import (
     EvaluationResult,
     InterviewEngine,
     QuestionGenerationResult,
+    RubricResult,
 )
+from interview_practice.imagegen import ImageGenerationError, generate_image
 from interview_practice.prompts import (
     DEFAULT_DOMAIN,
     DEFAULT_PERSONA,
@@ -39,6 +42,7 @@ from interview_practice.prompts import (
     technique_options,
 )
 from interview_practice.providers import discover_local_models
+from interview_practice.reports import build_jailbreak_workbook, load_fixtures
 from interview_practice.session import SessionState
 
 TECHNIQUE_BY_KEY = {item.key: item for item in technique_options()}
@@ -277,6 +281,28 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             index=0 if base.chain_runtime == "native" else 1,
             key="chain_runtime",
         )
+        if st.button("Build jailbreak report", key="build_report"):
+            fixtures_path = (
+                Path(__file__).resolve().parents[4]
+                / "tests"
+                / "fixtures"
+                / "red_team.json"
+            )
+            st.session_state["report_bytes"] = build_jailbreak_workbook(
+                load_fixtures(fixtures_path)
+            )
+        report_bytes = st.session_state.get("report_bytes")
+        if report_bytes:
+            st.download_button(
+                "Download jailbreak report (XLSX)",
+                data=report_bytes,
+                file_name="interview-practice-jailbreak.xlsx",
+                mime=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+                use_container_width=True,
+            )
 
     st.sidebar.divider()
     st.sidebar.caption(
@@ -286,7 +312,15 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
     )
     if st.sidebar.button("Clear session", use_container_width=True, key="clear"):
         session.reset()
-        for key in ("q_result", "e_result", "chat_warnings", "rubric_result"):
+        for key in (
+            "q_result",
+            "e_result",
+            "chat_warnings",
+            "rubric_result",
+            "judge_result",
+            "image_result",
+            "report_bytes",
+        ):
             st.session_state.pop(key, None)
         st.rerun()
 
@@ -402,6 +436,51 @@ def _prepare_tab(engine: InterviewEngine, technique: str) -> None:
             st.session_state["q_result"] = result
             _session().questions = result.question_set
             st.session_state.pop("e_result", None)
+
+    if st.button("Generate interview rubric", key="generate_rubric"):
+        try:
+            rubric_result = engine.generate_rubric(
+                role=role,
+                job_description=job_description,
+            )
+        except EngineError as exc:
+            st.error(str(exc))
+        else:
+            st.session_state["rubric_result"] = rubric_result
+
+    rubric_result = st.session_state.get("rubric_result")
+    if isinstance(rubric_result, RubricResult):
+        _warnings(rubric_result.warnings)
+        st.markdown("**Interview rubric**")
+        for criterion in rubric_result.rubric.criteria:
+            st.markdown(
+                f"- **{criterion.label}** ({criterion.weight}%): "
+                + "; ".join(criterion.descriptors)
+            )
+        with st.expander("Raw InterviewRubric JSON"):
+            st.json(rubric_result.rubric.to_dict())
+
+    if (
+        engine.settings.enable_image_generation
+        and engine.settings.provider == "openrouter"
+    ):
+        st.divider()
+        st.markdown("**Interview illustration (optional)**")
+        image_prompt = st.text_input(
+            "Image prompt",
+            key="image_prompt",
+            placeholder="A calm desk with notes and a laptop",
+        )
+        if st.button("Generate one image", key="generate_image"):
+            try:
+                image = generate_image(engine.settings, image_prompt)
+            except ImageGenerationError as exc:
+                st.error(str(exc))
+            else:
+                st.session_state["image_result"] = image
+        image = st.session_state.get("image_result")
+        if image is not None:
+            st.image(image.data, caption=f"{image.model} · opt-in image call")
 
     result = st.session_state.get("q_result")
     if not isinstance(result, QuestionGenerationResult):

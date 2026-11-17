@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -19,13 +20,19 @@ from interview_practice.prompts import (
     DEFAULT_PERSONA,
     DEFAULT_TECHNIQUE,
     PromptLibrary,
+    SystemPromptIntegrityError,
+    validate_system_messages,
 )
 from interview_practice.prompts.schemas import (
     AnswerEvaluation,
+    InterviewRubric,
+    JudgeScore,
     QuestionSet,
     SchemaError,
     parse_json_object,
     validate_answer_evaluation,
+    validate_interview_rubric,
+    validate_judge_score,
     validate_question_set,
 )
 from interview_practice.providers import build_provider
@@ -35,6 +42,7 @@ from interview_practice.providers.base import (
     Provider,
     ProviderError,
 )
+from interview_practice.retrieval import MemoryUnavailable, QuestionMemory
 from interview_practice.session import GlobalBudget, SessionState
 from interview_practice.tailoring import build_tailored_context
 from interview_practice.usage import CallUsage
@@ -42,6 +50,12 @@ from interview_practice.usage import CallUsage
 
 class EngineError(RuntimeError):
     """A user-facing error with no secret or raw provider payload."""
+
+
+MAX_ROLE_CHARS = 120
+MAX_QUESTION_CHARS = 500
+MAX_ANSWER_CHARS = 4000
+MAX_CHAT_CHARS = 4000
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +74,20 @@ class EvaluationResult:
     evaluation: AnswerEvaluation
     warnings: tuple[str, ...]
     technique: str
+    usage: CallUsage
+
+
+@dataclass(frozen=True, slots=True)
+class JudgeResult:
+    judge: JudgeScore
+    warnings: tuple[str, ...]
+    usage: CallUsage
+
+
+@dataclass(frozen=True, slots=True)
+class RubricResult:
+    rubric: InterviewRubric
+    warnings: tuple[str, ...]
     usage: CallUsage
 
 
@@ -99,6 +127,7 @@ class InterviewEngine:
             max_calls_per_minute=settings.global_rate_per_minute,
         )
         self.prompts = PromptLibrary()
+        self._question_memory: QuestionMemory | None = None
         self.guardrails = GuardrailPipeline(
             max_input_chars=settings.max_input_chars,
             max_output_chars=max(12_000, settings.max_output_tokens * 8),
@@ -132,6 +161,7 @@ class InterviewEngine:
         technique: str = DEFAULT_TECHNIQUE,
     ) -> QuestionGenerationResult:
         role = role.strip() or "AI engineer"
+        self._check_length(role, "role", MAX_ROLE_CHARS)
         difficulty = difficulty.strip().lower()
         if difficulty not in {"easy", "medium", "hard"}:
             raise EngineError("Difficulty must be easy, medium, or hard.")
@@ -199,6 +229,54 @@ class InterviewEngine:
                 "The model returned an invalid question-set JSON object. "
                 "Try again or switch prompt technique."
             ) from exc
+        if self.settings.enable_question_memory:
+            memory = self._get_memory()
+            model = self._active_model()
+            try:
+                duplicate = any(
+                    memory.has_near_duplicate(
+                        question.question,
+                        provider=self.settings.provider,
+                        model=model,
+                    )
+                    for question in question_set.questions
+                )
+                if duplicate:
+                    warnings.append(
+                        "Near-duplicate question detected; regenerated once."
+                    )
+                    retry_completion, retry_usage = self._call(
+                        self.prompts.question_set(
+                            technique,
+                            role=role,
+                            job_description=context.text,
+                            difficulty=difficulty,
+                            count=count,
+                            canary=self.session.canary,
+                            requirements=(
+                                requirements
+                                + "\nAvoid questions close to earlier questions."
+                            ),
+                            domain=self.settings.domain_profile,
+                            style=self.settings.response_style,
+                        ),
+                        response_format={"type": "json_object"},
+                    )
+                    usages.append(retry_usage)
+                    retry_guard = self._check_output(retry_completion.text)
+                    warnings.extend(retry_guard.warnings)
+                    question_set = validate_question_set(
+                        parse_json_object(retry_guard.text)
+                    )
+                memory.add_questions(
+                    question_set.questions,
+                    provider=self.settings.provider,
+                    model=model,
+                )
+            except (MemoryUnavailable, SchemaError) as exc:
+                raise EngineError(
+                    "Question memory could not be updated."
+                ) from exc
         return QuestionGenerationResult(
             question_set=question_set,
             warnings=tuple(warnings),
@@ -223,6 +301,8 @@ class InterviewEngine:
             raise EngineError("Choose or write a question first.")
         if not answer:
             raise EngineError("Write an answer before requesting feedback.")
+        self._check_length(question, "question", MAX_QUESTION_CHARS)
+        self._check_length(answer, "answer", MAX_ANSWER_CHARS)
 
         warnings: list[str] = []
         self._extend_unique(warnings, self._check_input(question, "question"))
@@ -263,6 +343,77 @@ class InterviewEngine:
             usage=usage,
         )
 
+    def generate_rubric(
+        self,
+        *,
+        role: str,
+        job_description: str = "",
+    ) -> RubricResult:
+        role = role.strip() or "AI engineer"
+        self._check_length(role, "role", MAX_ROLE_CHARS)
+        warnings: list[str] = []
+        if job_description.strip():
+            self._extend_unique(
+                warnings, self._check_input(job_description, "job description")
+            )
+        completion, usage = self._call(
+            self.prompts.rubric(
+                role=role,
+                job_description=job_description,
+                canary=self.session.canary,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
+            ),
+            response_format={"type": "json_object"},
+        )
+        guarded = self._check_output(completion.text)
+        warnings.extend(guarded.warnings)
+        try:
+            payload = parse_json_object(guarded.text)
+            rubric = validate_interview_rubric(payload)
+        except SchemaError as exc:
+            raise EngineError(
+                "The model returned an invalid rubric JSON object. Try again."
+            ) from exc
+        return RubricResult(rubric=rubric, warnings=tuple(warnings), usage=usage)
+
+    def judge_answer(
+        self,
+        *,
+        question: str,
+        answer: str,
+        evaluation: AnswerEvaluation,
+    ) -> JudgeResult:
+        if not self.settings.enable_llm_judge:
+            raise EngineError("Enable the LLM judge in settings first.")
+        question = question.strip()
+        answer = answer.strip()
+        if not question or not answer:
+            raise EngineError("Question and answer are required for the judge.")
+        completion, usage = self._call(
+            self.prompts.judge(
+                question=question,
+                answer=answer,
+                evaluation_json=json.dumps(evaluation.to_dict()),
+                canary=self.session.canary,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
+            ),
+            response_format={"type": "json_object"},
+        )
+        guarded = self._check_output(completion.text)
+        try:
+            judge = validate_judge_score(parse_json_object(guarded.text))
+        except SchemaError as exc:
+            raise EngineError(
+                "The judge returned an invalid JSON object. Try again."
+            ) from exc
+        return JudgeResult(
+            judge=judge,
+            warnings=guarded.warnings,
+            usage=usage,
+        )
+
     def chat(
         self,
         *,
@@ -277,6 +428,7 @@ class InterviewEngine:
         user_message = user_message.strip()
         if not user_message:
             raise EngineError("Write a message first.")
+        self._check_length(user_message, "chat message", MAX_CHAT_CHARS)
         warnings = list(self._check_input(user_message, "chat message"))
         if job_description.strip():
             self._extend_unique(
@@ -305,6 +457,21 @@ class InterviewEngine:
             persona=persona,
             usage=usage,
         )
+
+    def _active_model(self) -> str:
+        if self.settings.provider == "demo":
+            return "demo/interview-coach"
+        if self.settings.provider == "local":
+            return self.settings.local_model
+        return self.settings.model
+
+    def _get_memory(self) -> QuestionMemory:
+        if self._question_memory is None:
+            try:
+                self._question_memory = QuestionMemory(self.settings)
+            except MemoryUnavailable as exc:
+                raise EngineError(str(exc)) from exc
+        return self._question_memory
 
     def _call(
         self,
@@ -343,6 +510,10 @@ class InterviewEngine:
             response_format=response_format if supports_json else None,
         )
         try:
+            validate_system_messages(messages, self.session.canary)
+        except SystemPromptIntegrityError as exc:
+            raise EngineError("System prompt integrity check failed.") from exc
+        try:
             completion = self.provider.complete(request)
         except ProviderError as exc:
             raise EngineError(str(exc)) from exc
@@ -374,6 +545,13 @@ class InterviewEngine:
         self.session.record(usage)
         self.global_budget.record(usage)
         return completion, usage
+
+    @staticmethod
+    def _check_length(text: str, label: str, limit: int) -> None:
+        if len(text) > limit:
+            raise EngineError(
+                f"{label.capitalize()} must be at most {limit} characters."
+            )
 
     def _check_input(self, text: str, label: str) -> tuple[str, ...]:
         result = self.guardrails.check_input(text)

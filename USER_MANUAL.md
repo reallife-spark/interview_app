@@ -83,7 +83,7 @@ This runs tests, Ruff and the import-boundary gate.
 |---|---|---|---|
 | **Demo** | None | None | Deterministic fixtures; no cost; best for a review |
 | **OpenRouter** | Yes | Required | Live model calls through OpenRouter |
-| **Local agx64** | Local tunnel | Optional | Developer checks against an OpenAI-compatible endpoint |
+| **agx64** | Public HTTPS gateway | Gateway token | Open-source model path through `real-life.dev/v1` |
 
 The mode is selected with the single **Model** selector under
 **Settings → Developer settings**. It lists Demo, the three OpenRouter course
@@ -105,6 +105,22 @@ to a remote provider.
    **Evaluate answer**.
 7. Open **Coach**, choose an interviewer style and ask a follow-up question.
 
+## Optional features
+
+| Feature | How to use | Cost / safety |
+|---|---|---|
+| Interview rubric | **Prepare → Generate interview rubric** | One model call |
+| Excel red-team report | Developer settings → **Build jailbreak report**, or `python scripts/jailbreak_report.py --demo` | No network; formula cells sanitised |
+| Image generation | Enable in Developer settings; OpenRouter only; enter a prompt and click once | Extra cost; hidden for Demo/`agx64` |
+| Question memory | Enable Chroma; generated questions only | Local `.chroma`; provider-scoped |
+| LangChain runtime | Select `langchain`; OpenRouter only | Optional dependency; native default |
+| LLM judge | Enable; then **Run LLM judge** after an evaluation | Extra cost; default off |
+| Parameter comparison | `python scripts/compare_settings.py --demo` | Deterministic; `--live` optional |
+
+The public `agx64` path uses `LOCAL_BASE_URL=https://real-life.dev/v1` and the
+server-side `LOCAL_API_KEY`. The gateway exposes only health, models, chat and
+embeddings; it is not a general proxy.
+
 ## 6. Screen tour
 
 ### Sidebar
@@ -120,6 +136,8 @@ to a remote provider.
 - **Lexical RAG-lite** — select relevant job-description chunks.
 - **Refresh OpenRouter prices** — fetch current model metadata and prices.
 - **Clear session** — reset questions, feedback, chat, budget and canary.
+- **Image generation** — opt-in OpenRouter-only action; one image per click.
+- **Generate interview rubric** — structured criteria and weights in Prepare.
 
 ### Prepare tab
 
@@ -139,7 +157,8 @@ answer points. The raw `QuestionSet` JSON is available in an expander.
 - **Evaluate answer** — one structured model call.
 
 The result shows score, summary, strengths, gaps, improved answer, next steps
-and raw `AnswerEvaluation` JSON.
+and raw `AnswerEvaluation` JSON. If **LLM judge** is enabled, **Run LLM judge**
+adds a separate structured score; it is not the same as the first-pass score.
 
 ### Coach tab
 
@@ -244,8 +263,8 @@ is blocked, try again in soft mode or clear the session.
 | `OpenRouter request failed (429)` | Rate limit; wait or reduce calls |
 | Price shows `unavailable` | Click **Refresh OpenRouter prices**; the model may not expose pricing |
 | JSON parse error | Switch to **JSON schema**, retry, or check the model output |
-| Local mode fails | The `agx64` tunnel at `http://127.0.0.1:21464/v1` is down |
-| Streamlit Cloud cannot reach local mode | Expected; use OpenRouter or Demo |
+| `agx64` fails | Check the public gateway and `LOCAL_BASE_URL`; the older SSH tunnel is `http://127.0.0.1:21464/v1` |
+| Cloud cannot reach `agx64` | Check `LOCAL_BASE_URL` and `LOCAL_API_KEY` in Streamlit secrets; gateways return 401/200 |
 | Session cap reached | Clear the session or switch to Demo |
 | Clear session does not reset | Refresh the browser; session state is in memory |
 

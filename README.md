@@ -20,6 +20,9 @@ the observed checks and cost. No key is in the repository.
 - Model settings, model chooser, live catalog pricing, last-call usage and session caps.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
+- Structured interviewer rubrics, an opt-in LLM judge, and an Excel red-team report.
+- Optional Chroma question memory, LangChain runtime and OpenRouter image generation.
+- A public `agx64` path through the authenticated `real-life.dev` VPS gateway.
 
 ## Quick start
 
@@ -45,12 +48,12 @@ Open `http://localhost:8501`.
 |---|---|---|---|
 | **Demo** | None | None | Default; deterministic fixtures; review demo |
 | **OpenRouter** | Yes | `OPENROUTER_API_KEY` | Public app and live model calls |
-| **Local** | Local tunnel | Optional | Developer checks against `agx64` |
+| **agx64** | Public HTTPS gateway | Gateway token | Local/open-source model path |
 
-Local mode uses an OpenAI-compatible endpoint at
-`http://127.0.0.1:21464/v1` (the existing SSH tunnel). The public app is
-OpenRouter; there is **no silent fallback** from local to OpenRouter because a
-job description can be private.
+The local path uses the authenticated gateway `https://real-life.dev/v1`
+(`VPS.md`); the older SSH tunnel remains a developer option at
+`http://127.0.0.1:21464/v1`. There is **no silent fallback** from `agx64` to
+OpenRouter because a job description can be private.
 
 ## Course-allowed models
 
@@ -58,8 +61,8 @@ job description can be private.
 - `anthropic/claude-sonnet-5.5`
 - `openai/gpt-6.1-sol`
 
-The public model chooser is limited to those three. Local mode lists only the
-models returned by `/v1/models`.
+The OpenRouter side of the unified selector is limited to those three. The
+`agx64` side lists the models returned by `/v1/models`.
 
 ## Architecture
 
@@ -72,8 +75,10 @@ app.py
                  -> prompts (PromptLibrary + private templates)
                  -> guardrails (secrets, injection, canary)
                  -> tailoring (job-description cap + hybrid RAG-lite)
+                 -> retrieval (optional Chroma question memory)
+                 -> reports / imagegen / judge (optional artifacts)
                  -> session (call/cost caps, history, canary)
-                 -> schemas (QuestionSet, AnswerEvaluation)
+                 -> schemas (QuestionSet, AnswerEvaluation, Rubric, Judge)
 ```
 
 The engine is independent of Streamlit and is covered by unit tests. The UI is
@@ -93,6 +98,9 @@ src/interview_practice/
   session.py         session caps, usage history and exported history
   usage.py           CallUsage records for observability
   evaluation.py      prompt comparison rubric and runners
+  retrieval/         optional Chroma question memory
+  reports.py         Excel red-team workbook
+  imagegen.py        opt-in OpenRouter image action
   providers/         build_provider; base contract; _lib adapters; tests
   prompts/           PromptLibrary; public schemas/techniques; _lib; tests
   ui/                render_app; _lib layout; tests
@@ -121,13 +129,15 @@ eval/                demo results and summary
 ./scripts/check.sh
 python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
+python scripts/compare_settings.py --demo
+python scripts/jailbreak_report.py --demo
 ```
 
 `scripts/check.sh` runs pytest, Ruff and `PYTHONPATH=src lint-imports`.
 
 Evidence recorded on **2026-11-17** on this host:
 
-- 79 tests pass.
+- 111 tests pass.
 - Ruff reports 0 findings.
 - 8 import-linter contracts kept; the pass/fail/revert proof is documented in
   `src/interview_practice/README.md`.
@@ -136,7 +146,10 @@ Evidence recorded on **2026-11-17** on this host:
 - A dated live sample (2026-11-17) had 18/18 valid rows; `cot` scored 9.45/10 in that sample; it is a small sample, not a general claim.
 - Vault `./scripts/validate.sh` passes.
 
-This is **implemented and tested**, not a live deployment claim.
+The public Streamlit URL and the 2026-11-17 OpenRouter smoke were observed from
+this build host. The `agx64` gateway was also checked from this host; the
+Streamlit Cloud gateway secret is still owner-gated. No general live-service or
+model-quality claim is made.
 
 ## Safety and privacy
 
@@ -167,7 +180,10 @@ This is **implemented and tested**, not a live deployment claim.
 ## Limitations
 
 - The offline evaluation is a fixture, not a live model-quality result.
-- The hybrid RAG-lite path is not a vector database; Sprint 2 covers that.
+- Chroma question memory is optional and uses provider-scoped collections.
+- LangChain is an optional runtime; native remains the default.
+- Image generation and the LLM judge are opt-in and mocked in tests; no live
+  image or judge quality claim is made.
 - The guardrails are rule-based and can miss paraphrased attacks.
 - A public app needs its own OpenRouter key and spend cap; a shared key is not
   provided here.

@@ -283,3 +283,115 @@ def test_chat_includes_job_description_after_first_turn() -> None:
     assert "<CurrentQuestion>How do you evaluate RAG?</CurrentQuestion>" in content
     assert "<CurrentEvaluation>" in content
     assert content.endswith("second")
+
+
+RUBRIC_JSON = json.dumps(
+    {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 30,
+                "descriptors": ["specific systems", "no hand-waving"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 25,
+                "descriptors": ["trade-offs", "diagnosis"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 25,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["motivation", "examples"],
+            },
+        ],
+    }
+)
+
+
+def test_generate_rubric_returns_validated_rubric() -> None:
+    provider = StaticProvider([RUBRIC_JSON])
+    engine = make_engine(provider)
+    result = engine.generate_rubric(
+        role="AI engineer",
+        job_description="RAG and evaluation",
+    )
+    assert len(result.rubric.criteria) == 4
+    assert sum(item.weight for item in result.rubric.criteria) == 100
+    assert result.usage.provider == "fake"
+
+
+def test_field_caps_reject_oversized_role() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    engine = make_engine(provider)
+    with pytest.raises(EngineError, match="at most 120"):
+        engine.generate_questions(role="x" * 121, job_description="")
+    assert provider.calls == 0
+
+
+def test_question_memory_regenerates_once_on_duplicate(tmp_path) -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    engine = make_engine(
+        provider,
+        enable_question_memory=True,
+        question_memory_path=str(tmp_path),
+    )
+    engine.generate_questions(role="AI engineer", job_description="")
+    result = engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.calls == 3
+    assert any("Near-duplicate" in warning for warning in result.warnings)
+
+
+JUDGE_JSON = json.dumps(
+    {
+        "score": 78,
+        "verdict": "Good with one evidence gap",
+        "criteria": [
+            {
+                "name": "Correctness",
+                "score": 80,
+                "rationale": "Names the right concepts.",
+            },
+            {
+                "name": "Evidence",
+                "score": 70,
+                "rationale": "Needs a concrete threshold.",
+            },
+        ],
+        "rationale": "Technically sound but under-specified.",
+    }
+)
+
+
+def test_judge_is_opt_in_and_validates() -> None:
+    provider = StaticProvider([EVALUATION_JSON])
+    engine = make_engine(provider)
+    evaluation = engine.evaluate_answer(question="q", answer="a")
+    with pytest.raises(EngineError, match="Enable the LLM judge"):
+        engine.judge_answer(
+            question="q",
+            answer="a",
+            evaluation=evaluation.evaluation,
+        )
+    assert provider.calls == 1
+    judged = make_engine(
+        StaticProvider([EVALUATION_JSON, JUDGE_JSON]),
+        enable_llm_judge=True,
+    )
+    answer = judged.evaluate_answer(question="q", answer="a")
+    result = judged.judge_answer(
+        question="q",
+        answer="a",
+        evaluation=answer.evaluation,
+    )
+    assert result.judge.score == 78
+    assert len(result.judge.criteria) == 2

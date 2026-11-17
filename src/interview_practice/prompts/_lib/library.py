@@ -22,6 +22,7 @@ from interview_practice.prompts._lib.templates import (
     build_system_prompt,
     chain_stage_one_messages,
     chat_messages,
+    judge_messages,
     question_set_messages,
     rubric_messages,
 )
@@ -152,6 +153,25 @@ class PromptLibrary:
         return rubric_messages(
             role=role,
             job_description=job_description,
+            canary=canary,
+            domain=domain,
+            style=style,
+        )
+
+    def judge(
+        self,
+        *,
+        question: str,
+        answer: str,
+        evaluation_json: str,
+        canary: str,
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
+    ) -> list[ChatMessage]:
+        return judge_messages(
+            question=question,
+            answer=answer,
+            evaluation_json=evaluation_json,
             canary=canary,
             domain=domain,
             style=style,

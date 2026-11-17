@@ -18,7 +18,11 @@ class DemoProvider:
     def complete(self, request: CompletionRequest) -> Completion:
         prompt = "\n".join(message.content for message in request.messages)
         lowered = prompt.lower()
-        if "questionset" in lowered or (
+        if "judge" in lowered or "firstpassevaluation" in lowered:
+            text = _judge()
+        elif "rubric" in lowered or "criteria covering" in lowered:
+            text = _rubric()
+        elif "questionset" in lowered or (
             "question" in lowered and "generate" in lowered
         ):
             text = _question_set()
@@ -92,6 +96,84 @@ def _question_set() -> str:
                         "Versioned prompts and datasets",
                         "Automatic and human review",
                         "Regression gates and rollback",
+                    ],
+                },
+            ],
+        },
+        indent=2,
+    )
+
+
+def _judge() -> str:
+    return json.dumps(
+        {
+            "score": 78,
+            "verdict": "Good with one evidence gap",
+            "criteria": [
+                {
+                    "name": "Correctness",
+                    "score": 80,
+                    "rationale": "Names the right evaluation concepts.",
+                },
+                {
+                    "name": "Evidence",
+                    "score": 70,
+                    "rationale": "Needs a concrete dataset and threshold.",
+                },
+                {
+                    "name": "Communication",
+                    "score": 84,
+                    "rationale": "Clear structure and trade-offs.",
+                },
+            ],
+            "rationale": (
+                "The answer is technically sound but should add a measurable "
+                "release gate and a rollback rule."
+            ),
+        },
+        indent=2,
+    )
+
+
+def _rubric() -> str:
+    return json.dumps(
+        {
+            "role": "AI engineer",
+            "criteria": [
+                {
+                    "key": "technical_depth",
+                    "label": "Technical depth",
+                    "weight": 30,
+                    "descriptors": [
+                        "Names concrete systems and trade-offs",
+                        "Avoids unsupported claims",
+                    ],
+                },
+                {
+                    "key": "problem_solving",
+                    "label": "Problem solving",
+                    "weight": 25,
+                    "descriptors": [
+                        "Explains diagnosis and alternatives",
+                        "Uses evidence to choose a path",
+                    ],
+                },
+                {
+                    "key": "communication",
+                    "label": "Communication",
+                    "weight": 25,
+                    "descriptors": [
+                        "Structures the answer clearly",
+                        "Checks understanding",
+                    ],
+                },
+                {
+                    "key": "role_fit",
+                    "label": "Role fit",
+                    "weight": 20,
+                    "descriptors": [
+                        "Connects examples to the role",
+                        "Shows motivation and ownership",
                     ],
                 },
             ],

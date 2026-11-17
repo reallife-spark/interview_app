@@ -38,8 +38,9 @@ root has an `.env`, but this app intentionally loads only its own project
 `/mnt/knowledge/AIengin/06_Projects/interview-practice-app/.env` for local live
 testing, or to Streamlit Cloud secrets for the public app. The public app is
 live at
-<https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>; it currently renders
-with **Demo — no key**, so the OpenRouter secret is not loaded.
+<https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>. The first preflight
+render showed **Demo — no key**; the later public smoke loaded the OpenRouter
+secret and passed.
 
 ## Local setup
 
@@ -83,7 +84,7 @@ python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 ```
 
-Expected on this host (2026-11-17): 79 tests, Ruff 0, 18 evaluation rows,
+Expected on this host (2026-11-17): 111 tests, Ruff 0, 18 evaluation rows,
 red-team fixtures pass.
 
 ## Git: private repo and course mirror
@@ -209,8 +210,23 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 - This is an automated headless smoke test on 2026-11-17, not a manual
   reviewer test.
 
-Streamlit Cloud cannot reach the local `agx64` tunnel. Local mode is documented
-as a developer path only.
+## agx64 public gateway (2026-11-17)
+
+The VPS gateway is implemented at `https://real-life.dev/v1`; see `VPS.md`.
+It exposes only `/healthz`, `/v1/models`, `/v1/chat/completions` and
+`/v1/embeddings`. `/v1/*` returns 401 without the server-side bearer token and
+200 with it. No direct Ollama port or `/api/*` route is exposed.
+
+Set these in Streamlit Cloud secrets to enable the `agx64` option:
+
+```toml
+LOCAL_BASE_URL = "https://real-life.dev/v1"
+LOCAL_API_KEY = "the server-side gateway token"
+```
+
+The Cloud secret has **not** been verified from this host. The gateway checks
+above were run from the build host on 2026-11-17. The `real-life.dev` card
+remains suspended.
 
 ## real-life.dev — suspended
 

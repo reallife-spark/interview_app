@@ -1,6 +1,6 @@
 ---
 title: Interview Practice App — requirements matrix
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 06_Projects/interview-practice-app/BRIEF.md
@@ -31,7 +31,7 @@ A requirement is `done` only after its check passes.
 | R10 | Session-only chat history | `session.py`; no persistence | clear/export tests | done |
 | R11 | Export and clear session | Markdown/JSON export; clear button | `AppTest` test | done |
 | R12 | Demo mode | deterministic fixtures; default when no key | provider test | done |
-| R13 | Local `agx64` developer mode | OpenAI-compatible provider at `http://127.0.0.1:21464/v1`; auto-detect `/v1/models` | mocked local test | done: mocked; tunnel not exercised |
+| R13 | Local `agx64` mode | OpenAI-compatible provider; public gateway `https://real-life.dev/v1`; auto-detect `/v1/models` | mocked local test; public 401/200 and 32-model discovery on 2026-11-17 | done: gateway verified from build host; Cloud secret pending |
 | R14 | No silent provider fallback | provider selected explicitly; local failure stays local | provider test | done |
 | R15 | Cost visibility | OpenRouter model metadata + token usage; per-call and session | cost tests | done |
 | R16 | Model settings | model, temperature, `max_tokens`, `top_p`, `reasoning_effort` when supported | UI/config tests | done |
@@ -42,9 +42,9 @@ A requirement is `done` only after its check passes.
 | R21 | Prompt documentation | `PROMPTS.md` | technique coverage check | done |
 | R22 | Security documentation | `SECURITY.md` | OWASP mapping and limitations | done |
 | R23 | Evaluation documentation | `EVALUATION.md`; `eval/results.csv`; `eval/summary.md` | demo/live result recorded | done: offline; live user-gated |
-| R24 | Deployment documentation | `DEPLOYMENT.md`; Streamlit secrets | user-confirmed deploy | done |
+| R24 | Deployment documentation | `DEPLOYMENT.md`; Streamlit secrets | public app live; OpenRouter smoke 2026-11-17 | done |
 | R25 | Course repo submission | `course` remote; push to `rmobil-AE.1.5` | user checks GitHub page | blocked: 403/404; active account `reallife-spark` vs alias `rmobil` |
-| R26 | Private backup repo | `interview_app` under `reallife-spark`; pushed, tag `v0.1.1` | user checks GitHub page | done |
+| R26 | Private backup repo | `interview_app` under `reallife-spark`; branch `feat/optional-expansion`; tags `v0.1.1`, `v0.1.2-pre-optional` | `git status`/GitHub | done |
 | R27 | No secrets in tracked content | `.gitignore`; `.env.example`; secret scan | `git grep`/scanner | done |
 | R28 | No live claim from development host | docs use “implemented and tested” or “not verified here” | doc review | done |
 | R29 | Deadline discipline | MVP first; optional tasks after required features | timeline check | done |
@@ -62,21 +62,51 @@ A requirement is `done` only after its check passes.
 | B3 | Prompt price | `cost.py` + OpenRouter models endpoint | cost test | done |
 | B4 | OpenRouter docs improvement | model catalog drives picker, pricing, context length, supported parameters | config test | done |
 | B5 | Job-description tailoring (RAG) | whole-text v1 + hybrid RAG-lite (BM25 + hashed vectors + RRF) | tailoring test | done |
-| B6 | LLM chooser | three course models; local models in local mode | UI test | done |
+| B6 | LLM chooser | one selector: three course models + discovered `agx64` models | UI/config tests | done |
 | B7 | Security guard | soft/strict modes | guardrail test | done |
 | B8 | Full chatbot | Coach tab with history | chat test | done |
 | B9 | Prompt/model evaluation | deterministic rubric; dated live sample | eval test | done |
 | B10 | Interviewer personas | `PromptLibrary` persona layer; Coach selector | prompt/UI tests | done |
 
-## Excluded requirements
+## Optional task matrix
 
-| ID | Requirement | Reason |
+All E/M/H tasks are implemented or explicitly evidenced. A mocked test is not a
+live-model quality claim.
+
+| ID | Optional task | Evidence | Status |
+|---|---|---|---|
+| E1 | LLM critique of usability, security and prompts | `APP_CRITIQUE.md` | done: LLM review, not external audit |
+| E2 | Personal-domain prompt profiles | `prompts/domains.py`; domain tests | done |
+| E3 | More security constraints / system-prompt validation | `prompts/integrity.py`; field caps; integrity tests | done |
+| E4 | Difficulty levels | `Prepare` difficulty selector; question schema/tests | done |
+| E5 | Concise vs detailed prompts | `prompts/styles.py`; style tests | done |
+| E6 | Structured interviewer guidelines | `InterviewRubric` schema, engine and UI; rubric tests | done |
+| E7 | AI personas | strict/neutral/friendly persona layer and Coach selector | done |
+| E8 | Compare a model setting | `scripts/compare_settings.py --demo`; optional `--live` | done: deterministic demo |
+| M1 | All model settings | model, temperature, max tokens, top-p, reasoning effort | done |
+| M2 | Two structured JSON formats | `QuestionSet`, `AnswerEvaluation`, rubric and judge shapes | done |
+| M3 | Prompt price | `cost.py`, OpenRouter catalog, usage/cost display | done |
+| M4 | Original OpenRouter improvement | capability-aware catalog, pricing, model discovery and selector | done |
+| M5 | Excel jailbreak report | `reports.py`; `scripts/jailbreak_report.py`; workbook download/test | done |
+| M6 | Job-description tailoring (RAG) | `tailoring.py`; hybrid RAG-lite tests | done |
+| M7 | LLM chooser | unified Model selector; three OpenRouter + `agx64` models | done |
+| M8 | Image generation | `imagegen.py`; opt-in OpenRouter action; mocked image test | done: mocked; not live-tested |
+| M9 | Security guard + developer settings separation | `guardrails.py`; Developer settings expander; tests | done |
+| H1 | Full chatbot | Coach tab with session history | done |
+| H2 | LangChain chains | `providers/_lib/langchain.py`; `CHAIN_RUNTIME=langchain`; importorskip test | done: mocked/native default |
+| H3 | Vector database | `retrieval/` Chroma memory; provider-scoped collections; duplicate test | done: Chroma test; no live embedding claim |
+| H4 | Open-source LLM | `agx64` local provider and public gateway; 32 models discovered | done: gateway verified; Cloud secret pending |
+| H5 | LLM-as-judge | opt-in `judge_answer`; structured judge schema; engine test | done: mocked; default off |
+
+## Originally excluded, now implemented
+
+| ID | Requirement | Phase 16 disposition |
 |---|---|---|
-| X1 | Image generation | Not selected; keeps the public app text-only and cheap |
-| X2 | Excel jailbreak report | Replaced by a reproducible Markdown red-team table |
-| X3 | LangChain | Sprint 2 topic; not needed for Sprint 1 |
-| X4 | Vector database | Sprint 2 topic; hybrid RAG-lite is the bounded substitute |
-| X5 | Open-source-only model | Course defaults use OpenRouter; local mode is an extra |
+| X1 | Image generation | Implemented as opt-in M8; OpenRouter-only |
+| X2 | Excel jailbreak report | Implemented as M5 with formula sanitisation |
+| X3 | LangChain | Implemented as optional H2; native remains default |
+| X4 | Vector database | Implemented as optional H3 Chroma question memory |
+| X5 | Open-source-only model | Implemented through `agx64` H4 |
 
 ## User-gated checks
 
@@ -85,8 +115,8 @@ A requirement is `done` only after its check passes.
 | G1 | GitHub account is `reallife-spark` and is the intended account | `gh auth status` and `gh api user` checked; email scope unavailable | done |
 | G2 | Private repo `interview_app` may be created | explicit user request; created | done |
 | G3 | Course repo push | `git ls-remote` 403; `gh api`/`curl` 404; active account `reallife-spark` vs alias `rmobil` | blocked |
-| G4 | Streamlit Cloud deployment | user action; build agent prepares files | planned |
-| G5 | Review booked | user action | planned |
+| G4 | Streamlit Cloud deployment | public app live; OpenRouter smoke 2026-11-17 | done |
+| G5 | Review booked | user action; course mirror still blocked | planned |
 
 ## Course documents
 
@@ -104,5 +134,7 @@ A requirement is `done` only after its check passes.
 - Offline tests prove code paths, not live model quality.
 - A live OpenRouter run must record model, date, prompt variant and observed
   output; no aggregate claim beyond the sample.
-- Local `agx64` checks prove that path only; the public app is OpenRouter.
+- Local `agx64` checks prove that path only. The public gateway was verified
+  from the build host on 2026-11-17; the Streamlit Cloud secret is not yet
+  confirmed.
 - `03_Sources/` is read-only after capture.

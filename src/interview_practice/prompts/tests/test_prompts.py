@@ -9,13 +9,17 @@ from interview_practice.prompts import (
     PERSONA_ORDER,
     TECHNIQUE_ORDER,
     PromptLibrary,
+    SystemPromptIntegrityError,
     persona_options,
     technique_options,
+    validate_system_messages,
+    validate_system_prompt,
 )
 from interview_practice.prompts.schemas import (
     SchemaError,
     parse_json_object,
     validate_answer_evaluation,
+    validate_interview_rubric,
     validate_question_set,
 )
 
@@ -212,3 +216,106 @@ def test_validate_answer_evaluation_rejects_bad_score() -> None:
     }
     with pytest.raises(SchemaError, match="score"):
         validate_answer_evaluation(payload)
+
+
+def test_domain_and_style_are_applied() -> None:
+    prompt = library.system_prompt(
+        "json_schema",
+        "canary-123",
+        domain="finance",
+        style="concise",
+    )
+    assert "Finance" in prompt
+    assert "short, high-signal" in prompt
+
+
+def test_system_prompt_integrity_rejects_missing_markers() -> None:
+    with pytest.raises(SystemPromptIntegrityError, match="required markers"):
+        validate_system_prompt("You are a helpful assistant.", "canary-123")
+    messages = library.question_set(
+        "zero_shot",
+        role="AI engineer",
+        job_description="",
+        difficulty="medium",
+        count=1,
+        canary="canary-123",
+    )
+    validate_system_messages(messages, "canary-123")
+    messages[0] = ChatMessage("system", "tampered")
+    with pytest.raises(SystemPromptIntegrityError):
+        validate_system_messages(messages, "canary-123")
+
+
+def test_rubric_prompt_and_validation() -> None:
+    messages = library.rubric(
+        role="AI engineer",
+        job_description="RAG and evaluation",
+        canary="canary-123",
+    )
+    assert "4 to 6 criteria" in messages[1].content
+    payload = {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 30,
+                "descriptors": ["specific systems", "no hand-waving"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 25,
+                "descriptors": ["trade-offs", "diagnosis"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 25,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["motivation", "examples"],
+            },
+        ],
+    }
+    rubric = validate_interview_rubric(payload)
+    assert sum(item.weight for item in rubric.criteria) == 100
+    assert rubric.to_dict() == payload
+
+
+def test_rubric_rejects_bad_weight_total() -> None:
+    payload = {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 90,
+                "descriptors": ["a", "b"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 20,
+                "descriptors": ["a", "b"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 20,
+                "descriptors": ["a", "b"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["a", "b"],
+            },
+        ],
+    }
+    with pytest.raises(SchemaError, match="total 100"):
+        validate_interview_rubric(payload)

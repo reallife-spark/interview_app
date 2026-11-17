@@ -14,6 +14,12 @@ from interview_practice.prompts.domains import (
     domain_options,
     get_domain,
 )
+from interview_practice.prompts.integrity import (
+    REQUIRED_SYSTEM_MARKERS,
+    SystemPromptIntegrityError,
+    validate_system_messages,
+    validate_system_prompt,
+)
 from interview_practice.prompts.personas import (
     DEFAULT_PERSONA,
     PERSONA_ORDER,
@@ -41,6 +47,8 @@ __all__ = [
     "PROMPT_VERSION",
     "Persona",
     "PromptLibrary",
+    "REQUIRED_SYSTEM_MARKERS",
+    "SystemPromptIntegrityError",
     "TECHNIQUE_ORDER",
     "Technique",
     "domain_options",
@@ -49,4 +57,6 @@ __all__ = [
     "persona_options",
     "style_options",
     "technique_options",
+    "validate_system_messages",
+    "validate_system_prompt",
 ]

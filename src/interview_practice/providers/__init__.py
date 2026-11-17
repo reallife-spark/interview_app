@@ -7,6 +7,7 @@ from typing import Any
 
 from interview_practice.config import ProviderName, Settings
 from interview_practice.providers._lib.demo import DemoProvider
+from interview_practice.providers._lib.langchain import LangChainProvider
 from interview_practice.providers._lib.local import OpenAILocalProvider
 from interview_practice.providers._lib.openrouter import OpenRouterProvider
 from interview_practice.providers.base import (
@@ -31,7 +32,11 @@ def build_provider(
     not leave the machine because a tunnel is down.
     """
 
+    if settings.chain_runtime == "langchain" and settings.provider != "openrouter":
+        raise ProviderError("LangChain runtime requires OpenRouter mode.")
     if settings.provider == "openrouter":
+        if settings.chain_runtime == "langchain":
+            return LangChainProvider(settings)
         return OpenRouterProvider(
             settings.openrouter_api_key,
             session=session,
