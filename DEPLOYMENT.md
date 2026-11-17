@@ -212,19 +212,12 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 Streamlit Cloud cannot reach the local `agx64` tunnel. Local mode is documented
 as a developer path only.
 
-## real-life.dev project card
+## real-life.dev — suspended
 
-Add a project card that links to the Streamlit URL and the course repository.
-The site's exact component was not readable from this host; use the site's
-existing card pattern and confirm the result visually.
-
-Suggested content:
-
-- **Title:** Interview Practice Coach
-- **Description:** Job-description-tailored AI interview practice with
-  structured feedback, six prompt techniques and a defensive prompt.
-- **Links:** live app + course repository
-- **Tags:** AI engineering, Streamlit, OpenRouter, prompt engineering
+The owner directed on 2026-11-17 that no `real-life.dev` deployment or project
+card be made. No card was added, no card source is maintained, and no
+`real-life.dev` live claim is made. The Streamlit URL is the only public
+deployment. This decision supersedes the earlier card suggestion.
 
 ## Course submission
 
@@ -259,7 +252,7 @@ cancellation does not refund it. The LMS page is authoritative.
   Chromium on 2026-11-17: five-question generation, evaluation, Coach chat,
   safety refusal, cost display, Markdown export and clear all passed.
 - A dated OpenRouter evaluation sample was also run locally on 2026-11-17.
-- No `real-life.dev` deployment was made.
+- No `real-life.dev` deployment or card was made; it is intentionally suspended.
 - No course submission or review was completed.
 - The project `.env` is absent; the Cloud secret is configured and the public
   live path passed, but local live runs still need the project `.env`.

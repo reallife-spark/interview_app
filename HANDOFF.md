@@ -120,5 +120,6 @@ git push -u course main
 - Update `DEPLOYMENT.md` and the LMS evidence with the actual course URL.
 - Verify the already-configured Streamlit Cloud secret before submission; the
   public live smoke passed on 2026-11-17.
-- Add the `real-life.dev` project card.
+- Do not add or claim a `real-life.dev` card; the owner suspended it on
+  2026-11-17.
 - Submit and schedule the review.
