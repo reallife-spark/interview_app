@@ -8,7 +8,10 @@ from typing import Any
 import requests
 
 from interview_practice.config import APP_NAME, APP_URL, OPENROUTER_BASE_URL
-from interview_practice.providers._lib.http import prefer_ipv4_session
+from interview_practice.providers._lib.http import (
+    prefer_ipv4_session,
+    request_with_retries,
+)
 from interview_practice.providers.base import (
     Completion,
     CompletionRequest,
@@ -26,6 +29,7 @@ class OpenRouterProvider:
         base_url: str = OPENROUTER_BASE_URL,
         session: requests.Session | None = None,
         timeout: float = 60.0,
+        app_url: str = APP_URL,
     ) -> None:
         if not api_key:
             raise ProviderError("OPENROUTER_API_KEY is required for OpenRouter mode")
@@ -33,21 +37,25 @@ class OpenRouterProvider:
         self._base_url = base_url.rstrip("/")
         self._session = session or prefer_ipv4_session()
         self._timeout = timeout
+        self._app_url = app_url
 
     def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": APP_URL,
+            "HTTP-Referer": self._app_url,
             "X-Title": APP_NAME,
         }
 
     def list_models(self) -> list[str]:
         try:
-            response = self._session.get(
+            response = request_with_retries(
+                self._session,
+                "GET",
                 f"{self._base_url}/models",
                 headers=self._headers(),
                 timeout=self._timeout,
+                idempotent=True,
             )
         except requests.RequestException as exc:
             raise ProviderError("Could not reach OpenRouter") from exc
@@ -82,7 +90,9 @@ class OpenRouterProvider:
 
         started = time.monotonic()
         try:
-            response = self._session.post(
+            response = request_with_retries(
+                self._session,
+                "POST",
                 f"{self._base_url}/chat/completions",
                 headers=self._headers(),
                 json=payload,

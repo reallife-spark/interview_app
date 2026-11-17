@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from interview_practice.config import ProviderName, Settings
@@ -34,6 +35,7 @@ def build_provider(
         return OpenRouterProvider(
             settings.openrouter_api_key,
             session=session,
+            app_url=settings.openrouter_app_url,
         )
     if settings.provider == "local":
         return OpenAILocalProvider(
@@ -47,6 +49,15 @@ def build_provider(
     raise ProviderError(f"Unknown provider: {settings.provider}")
 
 
+def discover_local_models(
+    settings: Settings, *, session: Any | None = None
+) -> list[str]:
+    """List agx64 models without changing the selected provider."""
+
+    local = replace(settings, provider="local")
+    return build_provider(local, session=session).list_models()
+
+
 __all__ = [
     "Completion",
     "CompletionRequest",
@@ -54,4 +65,5 @@ __all__ = [
     "Provider",
     "ProviderError",
     "build_provider",
+    "discover_local_models",
 ]

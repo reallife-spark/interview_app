@@ -35,7 +35,7 @@ from interview_practice.providers.base import (
     Provider,
     ProviderError,
 )
-from interview_practice.session import SessionState
+from interview_practice.session import GlobalBudget, SessionState
 from interview_practice.tailoring import build_tailored_context
 from interview_practice.usage import CallUsage
 
@@ -51,6 +51,8 @@ class QuestionGenerationResult:
     notice: str
     technique: str
     usage: CallUsage
+    usages: tuple[CallUsage, ...] = ()
+    total_cost_usd: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +80,7 @@ class InterviewEngine:
         provider: Provider | None = None,
         session: SessionState | None = None,
         catalog: ModelCatalog | None = None,
+        global_budget: GlobalBudget | None = None,
     ) -> None:
         try:
             settings.validate()
@@ -90,6 +93,11 @@ class InterviewEngine:
             raise EngineError(str(exc)) from exc
         self.session = session or SessionState()
         self.catalog = catalog or default_catalog()
+        self.global_budget = global_budget or GlobalBudget(
+            max_calls_per_day=settings.global_max_calls_per_day,
+            max_cost_per_day=settings.global_max_cost_per_day,
+            max_calls_per_minute=settings.global_rate_per_minute,
+        )
         self.prompts = PromptLibrary()
         self.guardrails = GuardrailPipeline(
             max_input_chars=settings.max_input_chars,
@@ -149,15 +157,19 @@ class InterviewEngine:
                 warnings, self._check_input(context.text, "job description")
             )
 
+        usages: list[CallUsage] = []
         requirements = ""
         if technique == "chained":
-            first_completion, _ = self._call(
+            first_completion, first_usage = self._call(
                 self.prompts.chain_stage_one(
                     role=role,
                     job_description=context.text,
                     canary=self.session.canary,
+                    domain=self.settings.domain_profile,
+                    style=self.settings.response_style,
                 )
             )
+            usages.append(first_usage)
             first_guard = self._check_output(first_completion.text)
             warnings.extend(first_guard.warnings)
             requirements = first_guard.text
@@ -171,9 +183,12 @@ class InterviewEngine:
                 count=count,
                 canary=self.session.canary,
                 requirements=requirements,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
             ),
             response_format={"type": "json_object"},
         )
+        usages.append(usage)
         guarded = self._check_output(completion.text)
         warnings.extend(guarded.warnings)
         try:
@@ -190,6 +205,8 @@ class InterviewEngine:
             notice=context.notice,
             technique=technique,
             usage=usage,
+            usages=tuple(usages),
+            total_cost_usd=_total_cost(usages),
         )
 
     def evaluate_answer(
@@ -222,6 +239,8 @@ class InterviewEngine:
                 answer=answer,
                 job_description=job_description,
                 canary=self.session.canary,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
             ),
             response_format={"type": "json_object"},
         )
@@ -235,6 +254,8 @@ class InterviewEngine:
                 "The model returned an invalid evaluation JSON object. "
                 "Try again or switch prompt technique."
             ) from exc
+        self.session.last_question = question
+        self.session.last_answer = answer
         return EvaluationResult(
             evaluation=evaluation,
             warnings=tuple(warnings),
@@ -250,12 +271,14 @@ class InterviewEngine:
         job_description: str = "",
         technique: str = DEFAULT_TECHNIQUE,
         persona: str = DEFAULT_PERSONA,
+        current_question: str = "",
+        current_evaluation: str = "",
     ) -> ChatResult:
         user_message = user_message.strip()
         if not user_message:
             raise EngineError("Write a message first.")
         warnings = list(self._check_input(user_message, "chat message"))
-        if job_description.strip() and not history:
+        if job_description.strip():
             self._extend_unique(
                 warnings, self._check_input(job_description, "job description")
             )
@@ -267,6 +290,10 @@ class InterviewEngine:
                 job_description=job_description,
                 canary=self.session.canary,
                 persona=persona,
+                current_question=current_question,
+                current_evaluation=current_evaluation,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
             )
         )
         guarded = self._check_output(completion.text)
@@ -287,6 +314,7 @@ class InterviewEngine:
     ) -> tuple[Completion, CallUsage]:
         try:
             self.session.can_call(self.settings)
+            self.global_budget.acquire()
         except RuntimeError as exc:
             raise EngineError(str(exc)) from exc
         if self.settings.provider == "demo":
@@ -344,6 +372,7 @@ class InterviewEngine:
             latency_ms=completion.latency_ms,
         )
         self.session.record(usage)
+        self.global_budget.record(usage)
         return completion, usage
 
     def _check_input(self, text: str, label: str) -> tuple[str, ...]:
@@ -367,3 +396,9 @@ class InterviewEngine:
         for value in values:
             if value not in target:
                 target.append(value)
+
+
+def _total_cost(usages: list[CallUsage]) -> float | None:
+    if not usages or any(usage.cost_usd is None for usage in usages):
+        return None
+    return sum(usage.cost_usd or 0.0 for usage in usages)

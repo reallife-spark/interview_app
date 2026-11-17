@@ -106,3 +106,32 @@ def test_streamlit_secret_does_not_override_local_provider() -> None:
     settings = apply_secret_values(base, {"OPENROUTER_API_KEY": "secret-openrouter"})
     assert settings.provider == "local"
     assert settings.openrouter_api_key == "secret-openrouter"
+
+
+def test_streamlit_numeric_and_boolean_secrets_are_applied() -> None:
+    base = Settings(provider="demo")
+    settings = apply_secret_values(
+        base,
+        {
+            "MAX_CALLS": "7",
+            "MAX_OUTPUT_TOKENS": "900",
+            "SESSION_COST_CAP_USD": "1.25",
+            "STRICT_SAFETY": "true",
+            "OPENROUTER_APP_URL": "https://example.test/app",
+        },
+    )
+    assert settings.max_calls == 7
+    assert settings.max_output_tokens == 900
+    assert settings.max_tokens == 900
+    assert settings.session_cost_cap_usd == 1.25
+    assert settings.strict_safety is True
+    assert settings.openrouter_app_url == "https://example.test/app"
+
+
+def test_settings_reject_invalid_caps() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="max_calls"):
+        Settings(max_calls=0).validate()
+    with pytest.raises(ValueError, match="session_cost_cap_usd"):
+        Settings(session_cost_cap_usd=-1).validate()

@@ -14,6 +14,8 @@ from interview_practice.prompts._lib.personas import (
     get_persona,
     get_persona_instruction,
 )
+from interview_practice.prompts.domains import DEFAULT_DOMAIN, get_domain
+from interview_practice.prompts.styles import DEFAULT_STYLE, get_style
 
 QUESTION_SET_SCHEMA_HINT = """{
   "role": "string",
@@ -38,19 +40,47 @@ ANSWER_EVALUATION_SCHEMA_HINT = """{
   "next_steps": ["string"]
 }"""
 
+RUBRIC_SCHEMA_HINT = """{
+  "role": "string",
+  "criteria": [
+    {
+      "key": "technical_depth",
+      "label": "Technical depth",
+      "weight": 30,
+      "descriptors": ["what a strong answer shows", "what a weak answer misses"]
+    }
+  ]
+}"""
+
 
 def _job_description_block(value: str) -> str:
     return f"<JobDescription>{escape(value.strip() or 'Not provided')}</JobDescription>"
 
 
-def build_system_prompt(technique: str, canary: str) -> str:
+def build_system_prompt(
+    technique: str,
+    canary: str,
+    *,
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
+) -> str:
     selected = get_spec(technique)
+    selected_domain = get_domain(domain)
+    selected_style = get_style(style)
     return (
         defensive_system_prompt(canary)
         + "\n\nPrompt technique: "
         + selected.label
         + "\n"
         + selected.system_layer
+        + "\n\nDomain: "
+        + selected_domain.label
+        + ". "
+        + selected_domain.instruction
+        + "\nResponse style: "
+        + selected_style.label
+        + ". "
+        + selected_style.instruction
     )
 
 
@@ -63,12 +93,16 @@ def question_set_messages(
     count: int,
     canary: str,
     requirements: str = "",
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
 ) -> list[ChatMessage]:
     selected = get_spec(technique)
+    selected_domain = get_domain(domain)
     user = dedent(
         f"""
         <Task>Generate {count} interview questions.</Task>
         <Role>{escape(role.strip() or "AI engineer")}</Role>
+        <Domain>{escape(selected_domain.label)}</Domain>
         <Difficulty>{escape(difficulty.strip() or "medium")}</Difficulty>
         {_job_description_block(job_description)}
         <Requirements>{escape(requirements.strip() or "Not provided")}</Requirements>
@@ -80,7 +114,10 @@ def question_set_messages(
         """
     ).strip()
     return [
-        ChatMessage("system", build_system_prompt(selected.key, canary)),
+        ChatMessage(
+            "system",
+            build_system_prompt(selected.key, canary, domain=domain, style=style),
+        ),
         ChatMessage("user", user),
     ]
 
@@ -90,6 +127,8 @@ def chain_stage_one_messages(
     role: str,
     job_description: str,
     canary: str,
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
 ) -> list[ChatMessage]:
     """Stage one of the chained technique: extract requirements as plain text."""
 
@@ -103,9 +142,9 @@ def chain_stage_one_messages(
         collaboration, and likely interview themes. Do not write questions yet.
         """
     ).strip()
-    system = build_system_prompt("role_persona", canary) + (
-        "\nYou are stage one of a two-stage chain. Return plain text bullets."
-    )
+    system = build_system_prompt(
+        "role_persona", canary, domain=domain, style=style
+    ) + ("\nYou are stage one of a two-stage chain. Return plain text bullets.")
     return [
         ChatMessage("system", system),
         ChatMessage("user", user),
@@ -119,6 +158,8 @@ def answer_evaluation_messages(
     answer: str,
     job_description: str,
     canary: str,
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
 ) -> list[ChatMessage]:
     selected = get_spec(technique)
     user = dedent(
@@ -134,7 +175,39 @@ def answer_evaluation_messages(
         """
     ).strip()
     return [
-        ChatMessage("system", build_system_prompt(selected.key, canary)),
+        ChatMessage(
+            "system",
+            build_system_prompt(selected.key, canary, domain=domain, style=style),
+        ),
+        ChatMessage("user", user),
+    ]
+
+
+def rubric_messages(
+    *,
+    role: str,
+    job_description: str,
+    canary: str,
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
+) -> list[ChatMessage]:
+    user = dedent(
+        f"""
+        <Task>Create structured interviewer guidelines for this role.</Task>
+        <Role>{escape(role.strip() or "AI engineer")}</Role>
+        {_job_description_block(job_description)}
+
+        Produce 4 to 6 criteria covering technical depth, problem solving,
+        communication and role fit. Weights must total 100. Return only JSON
+        matching this shape:
+        {RUBRIC_SCHEMA_HINT}
+        """
+    ).strip()
+    return [
+        ChatMessage(
+            "system",
+            build_system_prompt("role_persona", canary, domain=domain, style=style),
+        ),
         ChatMessage("user", user),
     ]
 
@@ -147,10 +220,16 @@ def chat_messages(
     job_description: str,
     canary: str,
     persona: str = DEFAULT_PERSONA,
+    current_question: str = "",
+    current_evaluation: str = "",
+    domain: str = DEFAULT_DOMAIN,
+    style: str = DEFAULT_STYLE,
 ) -> list[ChatMessage]:
     selected = get_spec(technique)
     selected_persona = get_persona(persona)
-    system = build_system_prompt(selected.key, canary) + (
+    system = build_system_prompt(
+        selected.key, canary, domain=domain, style=style
+    ) + (
         "\n\nInterviewer style: "
         + selected_persona.label
         + ". "
@@ -159,9 +238,22 @@ def chat_messages(
     messages = [ChatMessage("system", system)]
     messages.extend(history)
     content = user_message.strip()
-    if job_description.strip() and not history:
+    if job_description.strip():
         content = (
-            f"<JobDescription>{escape(job_description.strip())}</JobDescription>\n\n"
+            _job_description_block(job_description)
+            + "\n\n"
+            + content
+        )
+    if current_question.strip():
+        content = (
+            f"<CurrentQuestion>{escape(current_question.strip())}</CurrentQuestion>\n"
+            + content
+        )
+    if current_evaluation.strip():
+        content = (
+            "<CurrentEvaluation>"
+            + escape(current_evaluation.strip())
+            + "</CurrentEvaluation>\n"
             + content
         )
     messages.append(ChatMessage("user", content))

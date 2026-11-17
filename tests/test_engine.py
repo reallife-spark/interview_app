@@ -252,3 +252,34 @@ def test_list_models_wraps_provider_error() -> None:
     engine = make_engine(BrokenProvider([QUESTION_JSON]))
     with pytest.raises(EngineError, match="offline"):
         engine.list_models()
+
+
+def test_chained_result_exposes_both_usages() -> None:
+    provider = StaticProvider(["- Python\n- RAG", QUESTION_JSON])
+    engine = make_engine(provider)
+    result = engine.generate_questions(
+        role="AI engineer",
+        job_description="RAG",
+        technique="chained",
+        count=1,
+    )
+    assert len(result.usages) == 2
+    assert result.usages[0].provider == "fake"
+    assert len(engine.session.usage_history) == 2
+
+
+def test_chat_includes_job_description_after_first_turn() -> None:
+    provider = StaticProvider(["reply"])
+    engine = make_engine(provider)
+    engine.chat(
+        user_message="second",
+        history=[ChatMessage("user", "first"), ChatMessage("assistant", "reply")],
+        job_description="A private job description",
+        current_question="How do you evaluate RAG?",
+        current_evaluation='{"score": 70}',
+    )
+    content = provider.last_messages[-1].content
+    assert "<JobDescription>A private job description</JobDescription>" in content
+    assert "<CurrentQuestion>How do you evaluate RAG?</CurrentQuestion>" in content
+    assert "<CurrentEvaluation>" in content
+    assert content.endswith("second")

@@ -195,3 +195,22 @@ def test_factory_returns_demo() -> None:
     provider = build_provider(Settings(provider="demo"))
     assert provider.name == "demo"
     assert provider.list_models() == ["demo/interview-coach"]
+
+
+def test_openrouter_uses_configured_app_url() -> None:
+    response = FakeResponse(
+        {
+            "model": "openai/gpt-6-luna",
+            "choices": [{"message": {"content": "ok"}}],
+            "usage": {},
+        }
+    )
+    settings = Settings(
+        provider="openrouter",
+        openrouter_api_key="test-key",
+        openrouter_app_url="https://example.test/app",
+    )
+    provider = build_provider(settings, session=FakeSession(post_response=response))
+    provider.complete(_request())
+    session = provider._session  # noqa: SLF001 - test inspects the injected transport
+    assert session.last_post[1]["headers"]["HTTP-Referer"] == "https://example.test/app"

@@ -7,12 +7,13 @@ with ``repr=False`` so an accidental dataclass dump does not leak them.
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Literal
 
 ProviderName = Literal["demo", "openrouter", "local"]
+ChainRuntime = Literal["native", "langchain"]
 
 COURSE_MODELS: tuple[str, ...] = (
     "openai/gpt-6-luna",
@@ -26,11 +27,19 @@ COURSE_EMBEDDING_MODELS: tuple[str, ...] = (
     "openai/text-embedding-3-large",
 )
 ALLOWED_REASONING_EFFORTS: tuple[str, ...] = ("low", "medium", "high")
+ALLOWED_CHAIN_RUNTIMES: tuple[ChainRuntime, ...] = ("native", "langchain")
+ALLOWED_RESPONSE_STYLES: tuple[str, ...] = ("balanced", "concise", "detailed")
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 LOCAL_BASE_URL = "http://127.0.0.1:21464/v1"
-APP_URL = "https://real-life.dev"
+PUBLIC_APP_URL = "https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/"
+APP_URL = PUBLIC_APP_URL
 APP_NAME = "Interview Practice Coach"
+DEFAULT_IMAGE_MODEL = "google/gemini-3.1-flash-image"
+DEFAULT_EMBEDDING_MODEL = COURSE_EMBEDDING_MODELS[0]
+DEFAULT_LOCAL_EMBEDDING_MODEL = "nomic-embed-text"
+DEFAULT_DOMAIN = "ai_engineering"
+DEFAULT_RESPONSE_STYLE = "balanced"
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -60,6 +69,44 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
+def _coerce_int(value: object, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _coerce_float(value: object, default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    try:
+        return float(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _coerce_bool(value: object, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return default
+
+
+def _coerce_choice(
+    value: object,
+    default: str,
+    allowed: Sequence[str],
+) -> str:
+    if isinstance(value, str) and value.strip() in allowed:
+        return value.strip()
+    return default
+
+
 def _load_env_file() -> None:
     """Load a local .env if python-dotenv is available.
 
@@ -83,6 +130,77 @@ def _default_provider(has_openrouter_key: bool) -> ProviderName:
 
 
 @dataclass(frozen=True, slots=True)
+class ModelSelection:
+    """One option in the learner-facing model selector."""
+
+    key: str
+    label: str
+    provider: ProviderName
+    model: str
+    local_model: str = ""
+
+
+def model_options(
+    local_models: Sequence[str] = (),
+    *,
+    configured_local_model: str = "",
+) -> tuple[ModelSelection, ...]:
+    """Build one deterministic selector from demo, OpenRouter and agx64."""
+
+    options: list[ModelSelection] = [
+        ModelSelection(
+            key="demo",
+            label="Demo - deterministic, no network",
+            provider="demo",
+            model="demo/interview-coach",
+        )
+    ]
+    for model in COURSE_MODELS:
+        options.append(
+            ModelSelection(
+                key=f"openrouter:{model}",
+                label=f"OpenRouter - {model}",
+                provider="openrouter",
+                model=model,
+            )
+        )
+    discovered = sorted({value for value in local_models if value})
+    if configured_local_model and configured_local_model not in discovered:
+        discovered.insert(0, configured_local_model)
+    for model in discovered:
+        options.append(
+            ModelSelection(
+                key=f"local:{model}",
+                label=f"agx64 - {model}",
+                provider="local",
+                model=model,
+                local_model=model,
+            )
+        )
+    return tuple(options)
+
+
+def apply_model_selection(
+    settings: Settings,
+    selection: ModelSelection,
+) -> Settings:
+    return replace(
+        settings,
+        provider=selection.provider,
+        model=selection.model,
+        local_model=selection.local_model,
+    )
+
+
+def selection_for_settings(settings: Settings) -> str:
+    if settings.provider == "demo":
+        return "demo"
+    if settings.provider == "local":
+        return f"local:{settings.local_model}"
+    return f"openrouter:{settings.model}"
+
+
+@dataclass(frozen=True, slots=True)
 class Settings:
     """Runtime settings for one session.
 
@@ -102,10 +220,24 @@ class Settings:
     max_output_tokens: int = 1200
     max_input_chars: int = 8000
     session_cost_cap_usd: float = 0.50
+    global_max_calls_per_day: int = 500
+    global_max_cost_per_day: float = 5.00
+    global_rate_per_minute: int = 30
     openrouter_api_key: str = field(default="", repr=False)
+    openrouter_app_url: str = PUBLIC_APP_URL
     local_base_url: str = LOCAL_BASE_URL
     local_api_key: str = field(default="", repr=False)
     local_model: str = ""
+    enable_question_memory: bool = False
+    embedding_model: str = DEFAULT_EMBEDDING_MODEL
+    local_embedding_model: str = DEFAULT_LOCAL_EMBEDDING_MODEL
+    question_memory_max_items: int = 500
+    enable_image_generation: bool = False
+    image_model: str = DEFAULT_IMAGE_MODEL
+    enable_llm_judge: bool = False
+    chain_runtime: ChainRuntime = "native"
+    domain_profile: str = DEFAULT_DOMAIN
+    response_style: str = DEFAULT_RESPONSE_STYLE
 
     @classmethod
     def from_env(cls, *, load_env_file: bool = True) -> Settings:
@@ -117,6 +249,11 @@ class Settings:
         reasoning = os.getenv("REASONING_EFFORT", "").strip().lower() or None
         if reasoning not in ALLOWED_REASONING_EFFORTS:
             reasoning = None
+        chain_runtime = _coerce_choice(
+            os.getenv("CHAIN_RUNTIME", "native"),
+            "native",
+            ALLOWED_CHAIN_RUNTIMES,
+        )
         return cls(
             provider=provider,
             model=model,
@@ -130,11 +267,39 @@ class Settings:
             max_output_tokens=_env_int("MAX_OUTPUT_TOKENS", 1200),
             max_input_chars=_env_int("MAX_INPUT_CHARS", 8000),
             session_cost_cap_usd=_env_float("SESSION_COST_CAP_USD", 0.50),
+            global_max_calls_per_day=_env_int("GLOBAL_MAX_CALLS_PER_DAY", 500),
+            global_max_cost_per_day=_env_float("GLOBAL_MAX_COST_PER_DAY", 5.00),
+            global_rate_per_minute=_env_int("GLOBAL_RATE_PER_MINUTE", 30),
             openrouter_api_key=openrouter_key,
+            openrouter_app_url=(
+                os.getenv("OPENROUTER_APP_URL", PUBLIC_APP_URL).strip()
+                or PUBLIC_APP_URL
+            ),
             local_base_url=os.getenv("LOCAL_BASE_URL", LOCAL_BASE_URL).strip()
             or LOCAL_BASE_URL,
             local_api_key=os.getenv("LOCAL_API_KEY", "").strip(),
             local_model=os.getenv("LOCAL_MODEL", "").strip(),
+            enable_question_memory=_env_bool("ENABLE_QUESTION_MEMORY", False),
+            embedding_model=os.getenv(
+                "EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL
+            ).strip()
+            or DEFAULT_EMBEDDING_MODEL,
+            local_embedding_model=os.getenv(
+                "LOCAL_EMBEDDING_MODEL", DEFAULT_LOCAL_EMBEDDING_MODEL
+            ).strip()
+            or DEFAULT_LOCAL_EMBEDDING_MODEL,
+            question_memory_max_items=_env_int("QUESTION_MEMORY_MAX_ITEMS", 500),
+            enable_image_generation=_env_bool("ENABLE_IMAGE_GENERATION", False),
+            image_model=os.getenv("IMAGE_MODEL", DEFAULT_IMAGE_MODEL).strip()
+            or DEFAULT_IMAGE_MODEL,
+            enable_llm_judge=_env_bool("ENABLE_LLM_JUDGE", False),
+            chain_runtime=chain_runtime,  # type: ignore[arg-type]
+            domain_profile=os.getenv("DOMAIN_PROFILE", DEFAULT_DOMAIN).strip()
+            or DEFAULT_DOMAIN,
+            response_style=os.getenv(
+                "RESPONSE_STYLE", DEFAULT_RESPONSE_STYLE
+            ).strip()
+            or DEFAULT_RESPONSE_STYLE,
         )
 
     def validate(self) -> None:
@@ -145,6 +310,8 @@ class Settings:
                 raise ValueError(
                     f"OpenRouter model must be one of {', '.join(COURSE_MODELS)}"
                 )
+            if not self.openrouter_app_url.startswith(("http://", "https://")):
+                raise ValueError("OPENROUTER_APP_URL must be an HTTP(S) URL")
         if self.provider == "local" and not self.local_base_url:
             raise ValueError("LOCAL_BASE_URL is required for local mode")
         if not 0.0 <= self.temperature <= 2.0:
@@ -153,8 +320,26 @@ class Settings:
             raise ValueError("top_p must be between 0 and 1")
         if self.max_tokens <= 0:
             raise ValueError("max_tokens must be positive")
+        if self.max_output_tokens <= 0:
+            raise ValueError("max_output_tokens must be positive")
+        if self.max_input_chars <= 0:
+            raise ValueError("max_input_chars must be positive")
         if self.max_calls <= 0:
             raise ValueError("max_calls must be positive")
+        if self.session_cost_cap_usd < 0:
+            raise ValueError("session_cost_cap_usd must be zero or positive")
+        if self.global_max_calls_per_day < 0:
+            raise ValueError("global_max_calls_per_day must be zero or positive")
+        if self.global_max_cost_per_day < 0:
+            raise ValueError("global_max_cost_per_day must be zero or positive")
+        if self.global_rate_per_minute < 0:
+            raise ValueError("global_rate_per_minute must be zero or positive")
+        if self.chain_runtime not in ALLOWED_CHAIN_RUNTIMES:
+            raise ValueError(f"chain_runtime must be one of {ALLOWED_CHAIN_RUNTIMES}")
+        if self.response_style not in ALLOWED_RESPONSE_STYLES:
+            raise ValueError(
+                f"response_style must be one of {ALLOWED_RESPONSE_STYLES}"
+            )
 
     def redacted(self) -> dict[str, object]:
         data = asdict(self)
@@ -165,6 +350,40 @@ class Settings:
     @property
     def has_openrouter_key(self) -> bool:
         return bool(self.openrouter_api_key)
+
+
+SECRET_KEYS = frozenset(
+    {
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_MODEL",
+        "OPENROUTER_APP_URL",
+        "LOCAL_API_KEY",
+        "LOCAL_BASE_URL",
+        "LOCAL_MODEL",
+        "TEMPERATURE",
+        "MAX_OUTPUT_TOKENS",
+        "MAX_CALLS",
+        "MAX_INPUT_CHARS",
+        "SESSION_COST_CAP_USD",
+        "GLOBAL_MAX_CALLS_PER_DAY",
+        "GLOBAL_MAX_COST_PER_DAY",
+        "GLOBAL_RATE_PER_MINUTE",
+        "STRICT_SAFETY",
+        "ENABLE_LEXICAL_RAG",
+        "ENABLE_QUESTION_MEMORY",
+        "ENABLE_IMAGE_GENERATION",
+        "ENABLE_LLM_JUDGE",
+        "CHAIN_RUNTIME",
+        "EMBEDDING_MODEL",
+        "LOCAL_EMBEDDING_MODEL",
+        "QUESTION_MEMORY_MAX_ITEMS",
+        "IMAGE_MODEL",
+        "DOMAIN_PROFILE",
+        "RESPONSE_STYLE",
+        "TOP_P",
+        "REASONING_EFFORT",
+    }
+)
 
 
 def apply_secret_values(
@@ -179,18 +398,104 @@ def apply_secret_values(
     """
 
     updates: dict[str, object] = {}
-    key = values.get("OPENROUTER_API_KEY")
-    if isinstance(key, str) and key.strip():
-        updates["openrouter_api_key"] = key.strip()
+
+    def text(key: str) -> str | None:
+        value = values.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        return None
+
+    key = text("OPENROUTER_API_KEY")
+    if key:
+        updates["openrouter_api_key"] = key
         if settings.provider == "demo":
             updates["provider"] = "openrouter"
-    model = values.get("OPENROUTER_MODEL")
-    if isinstance(model, str) and model.strip():
-        updates["model"] = model.strip()
-    local_key = values.get("LOCAL_API_KEY")
-    if isinstance(local_key, str) and local_key.strip():
-        updates["local_api_key"] = local_key.strip()
-    local_model = values.get("LOCAL_MODEL")
-    if isinstance(local_model, str) and local_model.strip():
-        updates["local_model"] = local_model.strip()
+    for source, target in (
+        ("OPENROUTER_MODEL", "model"),
+        ("OPENROUTER_APP_URL", "openrouter_app_url"),
+        ("LOCAL_API_KEY", "local_api_key"),
+        ("LOCAL_BASE_URL", "local_base_url"),
+        ("LOCAL_MODEL", "local_model"),
+        ("EMBEDDING_MODEL", "embedding_model"),
+        ("LOCAL_EMBEDDING_MODEL", "local_embedding_model"),
+        ("IMAGE_MODEL", "image_model"),
+        ("DOMAIN_PROFILE", "domain_profile"),
+    ):
+        value = text(source)
+        if value:
+            updates[target] = value
+
+    for source, target, default in (
+        ("TEMPERATURE", "temperature", settings.temperature),
+        ("TOP_P", "top_p", settings.top_p),
+        ("MAX_CALLS", "max_calls", settings.max_calls),
+        ("MAX_INPUT_CHARS", "max_input_chars", settings.max_input_chars),
+        ("SESSION_COST_CAP_USD", "session_cost_cap_usd", settings.session_cost_cap_usd),
+        (
+            "GLOBAL_MAX_CALLS_PER_DAY",
+            "global_max_calls_per_day",
+            settings.global_max_calls_per_day,
+        ),
+        (
+            "GLOBAL_MAX_COST_PER_DAY",
+            "global_max_cost_per_day",
+            settings.global_max_cost_per_day,
+        ),
+        (
+            "GLOBAL_RATE_PER_MINUTE",
+            "global_rate_per_minute",
+            settings.global_rate_per_minute,
+        ),
+        (
+            "QUESTION_MEMORY_MAX_ITEMS",
+            "question_memory_max_items",
+            settings.question_memory_max_items,
+        ),
+    ):
+        if source in values:
+            if target in {
+                "temperature",
+                "top_p",
+                "session_cost_cap_usd",
+                "global_max_cost_per_day",
+            }:
+                updates[target] = _coerce_float(values[source], default)
+            else:
+                updates[target] = _coerce_int(values[source], default)
+
+    if "MAX_OUTPUT_TOKENS" in values:
+        max_output = _coerce_int(
+            values["MAX_OUTPUT_TOKENS"], settings.max_output_tokens
+        )
+        updates["max_output_tokens"] = max_output
+        updates["max_tokens"] = max_output
+
+    for source, target in (
+        ("STRICT_SAFETY", "strict_safety"),
+        ("ENABLE_LEXICAL_RAG", "enable_lexical_rag"),
+        ("ENABLE_QUESTION_MEMORY", "enable_question_memory"),
+        ("ENABLE_IMAGE_GENERATION", "enable_image_generation"),
+        ("ENABLE_LLM_JUDGE", "enable_llm_judge"),
+    ):
+        if source in values:
+            updates[target] = _coerce_bool(
+                values[source], bool(getattr(settings, target))
+            )
+
+    chain = text("CHAIN_RUNTIME")
+    if chain:
+        updates["chain_runtime"] = _coerce_choice(
+            chain, settings.chain_runtime, ALLOWED_CHAIN_RUNTIMES
+        )
+    style = text("RESPONSE_STYLE")
+    if style:
+        updates["response_style"] = _coerce_choice(
+            style, settings.response_style, ALLOWED_RESPONSE_STYLES
+        )
+    reasoning = text("REASONING_EFFORT")
+    if reasoning:
+        updates["reasoning_effort"] = (
+            reasoning if reasoning in ALLOWED_REASONING_EFFORTS else None
+        )
+
     return replace(settings, **updates)

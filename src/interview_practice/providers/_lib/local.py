@@ -8,7 +8,10 @@ from typing import Any
 import requests
 
 from interview_practice.config import LOCAL_BASE_URL
-from interview_practice.providers._lib.http import prefer_ipv4_session
+from interview_practice.providers._lib.http import (
+    prefer_ipv4_session,
+    request_with_retries,
+)
 from interview_practice.providers.base import (
     Completion,
     CompletionRequest,
@@ -44,10 +47,13 @@ class OpenAILocalProvider:
 
     def list_models(self) -> list[str]:
         try:
-            response = self._session.get(
+            response = request_with_retries(
+                self._session,
+                "GET",
                 f"{self._base_url}/models",
                 headers=self._headers(),
                 timeout=10,
+                idempotent=True,
             )
         except requests.RequestException as exc:
             raise ProviderError(
@@ -85,7 +91,9 @@ class OpenAILocalProvider:
 
         started = time.monotonic()
         try:
-            response = self._session.post(
+            response = request_with_retries(
+                self._session,
+                "POST",
                 f"{self._base_url}/chat/completions",
                 headers=self._headers(),
                 json=payload,

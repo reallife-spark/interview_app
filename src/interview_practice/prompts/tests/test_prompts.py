@@ -132,7 +132,8 @@ def test_chat_messages_preserve_history() -> None:
     )
     assert messages[0].role == "system"
     assert messages[1:3] == history
-    assert messages[-1].content == "second"
+    assert "<JobDescription>AI engineer</JobDescription>" in messages[-1].content
+    assert messages[-1].content.endswith("second")
 
 
 def test_parse_json_object_accepts_fences_and_preamble() -> None:

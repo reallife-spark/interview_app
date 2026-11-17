@@ -23,8 +23,11 @@ from interview_practice.prompts._lib.templates import (
     chain_stage_one_messages,
     chat_messages,
     question_set_messages,
+    rubric_messages,
 )
+from interview_practice.prompts.domains import DEFAULT_DOMAIN
 from interview_practice.prompts.personas import Persona
+from interview_practice.prompts.styles import DEFAULT_STYLE
 from interview_practice.prompts.techniques import PROMPT_VERSION, Technique
 
 
@@ -64,8 +67,15 @@ class PromptLibrary:
     def get_persona(self, key: str) -> Persona:
         return get_persona(key)
 
-    def system_prompt(self, technique: str, canary: str) -> str:
-        return build_system_prompt(technique, canary)
+    def system_prompt(
+        self,
+        technique: str,
+        canary: str,
+        *,
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
+    ) -> str:
+        return build_system_prompt(technique, canary, domain=domain, style=style)
 
     def question_set(
         self,
@@ -77,6 +87,8 @@ class PromptLibrary:
         count: int,
         canary: str,
         requirements: str = "",
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
     ) -> list[ChatMessage]:
         return question_set_messages(
             technique,
@@ -86,6 +98,8 @@ class PromptLibrary:
             count=count,
             canary=canary,
             requirements=requirements,
+            domain=domain,
+            style=style,
         )
 
     def chain_stage_one(
@@ -94,11 +108,15 @@ class PromptLibrary:
         role: str,
         job_description: str,
         canary: str,
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
     ) -> list[ChatMessage]:
         return chain_stage_one_messages(
             role=role,
             job_description=job_description,
             canary=canary,
+            domain=domain,
+            style=style,
         )
 
     def answer_evaluation(
@@ -109,6 +127,8 @@ class PromptLibrary:
         answer: str,
         job_description: str,
         canary: str,
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
     ) -> list[ChatMessage]:
         return answer_evaluation_messages(
             technique,
@@ -116,6 +136,25 @@ class PromptLibrary:
             answer=answer,
             job_description=job_description,
             canary=canary,
+            domain=domain,
+            style=style,
+        )
+
+    def rubric(
+        self,
+        *,
+        role: str,
+        job_description: str,
+        canary: str,
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
+    ) -> list[ChatMessage]:
+        return rubric_messages(
+            role=role,
+            job_description=job_description,
+            canary=canary,
+            domain=domain,
+            style=style,
         )
 
     def chat(
@@ -127,6 +166,10 @@ class PromptLibrary:
         job_description: str,
         canary: str,
         persona: str = DEFAULT_PERSONA,
+        current_question: str = "",
+        current_evaluation: str = "",
+        domain: str = DEFAULT_DOMAIN,
+        style: str = DEFAULT_STYLE,
     ) -> list[ChatMessage]:
         return chat_messages(
             technique,
@@ -135,4 +178,8 @@ class PromptLibrary:
             job_description=job_description,
             canary=canary,
             persona=persona,
+            current_question=current_question,
+            current_evaluation=current_evaluation,
+            domain=domain,
+            style=style,
         )

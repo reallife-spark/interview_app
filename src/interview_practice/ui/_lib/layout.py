@@ -6,15 +6,18 @@ safety and budget behaviour can be tested without a browser.
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 
 import streamlit as st
 
 from interview_practice.config import (
     ALLOWED_REASONING_EFFORTS,
-    COURSE_MODELS,
     Settings,
+    apply_model_selection,
     apply_secret_values,
+    model_options,
+    selection_for_settings,
 )
 from interview_practice.cost import format_usd
 from interview_practice.engine import (
@@ -24,24 +27,24 @@ from interview_practice.engine import (
     QuestionGenerationResult,
 )
 from interview_practice.prompts import (
+    DEFAULT_DOMAIN,
     DEFAULT_PERSONA,
+    DEFAULT_STYLE,
     DEFAULT_TECHNIQUE,
     PERSONA_ORDER,
     TECHNIQUE_ORDER,
+    domain_options,
     persona_options,
+    style_options,
     technique_options,
 )
-from interview_practice.providers import PROVIDER_NAMES
+from interview_practice.providers import discover_local_models
 from interview_practice.session import SessionState
 
-PROVIDER_LABELS = {
-    "demo": "Demo — no key",
-    "openrouter": "OpenRouter — public",
-    "local": "Local agx64 — developer",
-}
-MODEL_INDEX = {model: index for index, model in enumerate(COURSE_MODELS)}
 TECHNIQUE_BY_KEY = {item.key: item for item in technique_options()}
 PERSONA_BY_KEY = {item.key: item for item in persona_options()}
+DOMAIN_BY_KEY = {item.key: item for item in domain_options()}
+STYLE_BY_KEY = {item.key: item for item in style_options()}
 
 
 def _runtime_settings() -> Settings:
@@ -88,7 +91,7 @@ def render_app() -> None:
                 st.sidebar.warning(
                     "Could not refresh prices; estimates may be unavailable."
                 )
-        _show_stats(session, settings)
+    _show_stats(session, settings)
 
     st.title("Interview Practice Coach")
     st.caption("Turing College Sprint 1 · job-description-tailored interview practice")
@@ -122,33 +125,33 @@ def _session() -> SessionState:
 
 def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
     st.sidebar.header("Settings")
-    with st.sidebar.expander("Developer settings", expanded=True):
-        provider = st.selectbox(
-            "Provider",
-            PROVIDER_NAMES,
-            index=PROVIDER_NAMES.index(base.provider),
-            format_func=lambda name: PROVIDER_LABELS[name],
-            key="provider",
-        )
+    local_models = list(st.session_state.get("local_models", []))
+    options = model_options(
+        local_models,
+        configured_local_model=base.local_model,
+    )
+    by_key = {option.key: option for option in options}
+    current_key = selection_for_settings(base)
+    if current_key not in by_key:
+        current_key = "demo"
 
-        model = base.model
-        local_model = base.local_model
-        reasoning_effort = base.reasoning_effort
-        if provider == "openrouter":
+    with st.sidebar.expander("Developer settings", expanded=True):
+        selected_key = st.selectbox(
+            "Model",
+            [option.key for option in options],
+            index=[option.key for option in options].index(current_key),
+            format_func=lambda key: by_key[key].label,
+            key="model_selection",
+        )
+        selection = by_key[selected_key]
+        settings = apply_model_selection(base, selection)
+
+        if selection.provider == "openrouter":
             if not base.openrouter_api_key:
                 st.warning(
                     "No OPENROUTER_API_KEY is set. Use Demo, or add the key to "
                     "Streamlit secrets / your local `.env`."
                 )
-            selected_model = (
-                base.model if base.model in COURSE_MODELS else COURSE_MODELS[0]
-            )
-            model = st.selectbox(
-                "OpenRouter model",
-                COURSE_MODELS,
-                index=MODEL_INDEX[selected_model],
-                key="openrouter_model",
-            )
             reasoning_choice = st.selectbox(
                 "Reasoning effort",
                 ("none",) + ALLOWED_REASONING_EFFORTS,
@@ -163,17 +166,20 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             reasoning_effort = (
                 None if reasoning_choice == "none" else reasoning_choice
             )
-        elif provider == "local":
-            local_model = st.text_input(
-                "Local model",
-                value=base.local_model,
-                placeholder="blank = auto-detect from /v1/models",
-                key="local_model",
-            )
-            st.caption("Local endpoint: `http://127.0.0.1:21464/v1`")
+        elif selection.provider == "local":
+            st.caption(f"agx64 gateway: `{base.local_base_url}`")
+            if st.button("Discover agx64 models", use_container_width=True):
+                try:
+                    discovered = discover_local_models(base)
+                except Exception as exc:
+                    st.warning(f"Could not discover agx64 models: {exc}")
+                else:
+                    st.session_state["local_models"] = discovered
+                    st.rerun()
+            reasoning_effort = None
         else:
             st.caption("Deterministic fixtures. No network, no key, no cost.")
-            model = "demo/interview-coach"
+            reasoning_effort = None
 
         technique = st.selectbox(
             "Prompt technique",
@@ -183,6 +189,30 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             key="technique",
         )
         st.caption(TECHNIQUE_BY_KEY[technique].description)
+
+        domain = st.selectbox(
+            "Practice domain",
+            [item.key for item in domain_options()],
+            index=[item.key for item in domain_options()].index(
+                base.domain_profile
+                if base.domain_profile in DOMAIN_BY_KEY
+                else DEFAULT_DOMAIN
+            ),
+            format_func=lambda key: DOMAIN_BY_KEY[key].label,
+            key="domain_profile",
+        )
+        style = st.selectbox(
+            "Response style",
+            [item.key for item in style_options()],
+            index=[item.key for item in style_options()].index(
+                base.response_style
+                if base.response_style in STYLE_BY_KEY
+                else DEFAULT_STYLE
+            ),
+            format_func=lambda key: STYLE_BY_KEY[key].label,
+            key="response_style",
+        )
+        st.caption(STYLE_BY_KEY[style].instruction)
 
         temperature = st.slider(
             "Temperature",
@@ -222,6 +252,31 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             help="Select relevant job-description chunks instead of the whole text.",
             key="lexical_rag",
         )
+        question_memory = st.toggle(
+            "Question memory (Chroma)",
+            value=base.enable_question_memory,
+            help="Check generated questions for near-duplicates using a vector store.",
+            key="question_memory",
+        )
+        image_generation = st.toggle(
+            "Image generation (OpenRouter only)",
+            value=bool(base.enable_image_generation)
+            and selection.provider == "openrouter",
+            disabled=selection.provider != "openrouter",
+            key="image_generation",
+        )
+        llm_judge = st.toggle(
+            "LLM judge",
+            value=base.enable_llm_judge,
+            help="Add a second, opt-in judgement of the answer. Extra cost.",
+            key="llm_judge",
+        )
+        chain_runtime = st.selectbox(
+            "Chain runtime",
+            ("native", "langchain"),
+            index=0 if base.chain_runtime == "native" else 1,
+            key="chain_runtime",
+        )
 
     st.sidebar.divider()
     st.sidebar.caption(
@@ -231,21 +286,24 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
     )
     if st.sidebar.button("Clear session", use_container_width=True, key="clear"):
         session.reset()
-        for key in ("q_result", "e_result", "chat_warnings"):
+        for key in ("q_result", "e_result", "chat_warnings", "rubric_result"):
             st.session_state.pop(key, None)
         st.rerun()
 
     settings = replace(
-        base,
-        provider=provider,
-        model=model,
-        local_model=local_model,
+        settings,
         temperature=temperature,
         max_tokens=max_tokens,
         top_p=top_p,
         reasoning_effort=reasoning_effort,
         strict_safety=strict_safety,
         enable_lexical_rag=lexical_rag,
+        enable_question_memory=question_memory,
+        enable_image_generation=image_generation,
+        enable_llm_judge=llm_judge,
+        chain_runtime=chain_runtime,
+        domain_profile=domain,
+        response_style=style,
     )
     return settings, technique
 
@@ -353,6 +411,11 @@ def _prepare_tab(engine: InterviewEngine, technique: str) -> None:
         st.caption(result.notice)
     _warnings(result.warnings)
     st.caption(f"Technique: {TECHNIQUE_BY_KEY[result.technique].label}")
+    if len(result.usages) > 1:
+        st.caption(
+            f"Chained calls: {len(result.usages)} · "
+            f"total cost {format_usd(result.total_cost_usd)}"
+        )
     for question in result.question_set.questions:
         with st.container(border=True):
             st.markdown(f"**{question.id}. {question.question}**")
@@ -438,6 +501,11 @@ def _coach_tab(engine: InterviewEngine, technique: str) -> None:
     prompt = st.chat_input("Ask a follow-up question…")
     if prompt:
         history = list(session.messages)
+        current_evaluation = (
+            json.dumps(session.evaluation.to_dict())
+            if session.evaluation is not None
+            else ""
+        )
         try:
             result = engine.chat(
                 user_message=prompt,
@@ -445,6 +513,8 @@ def _coach_tab(engine: InterviewEngine, technique: str) -> None:
                 job_description=st.session_state.get("job_description", ""),
                 technique=technique,
                 persona=persona,
+                current_question=session.last_question,
+                current_evaluation=current_evaluation,
             )
         except EngineError as exc:
             st.error(str(exc))

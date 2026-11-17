@@ -7,6 +7,7 @@ fabricated number.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -51,8 +52,11 @@ class ModelCatalog:
     def from_payload(
         cls, payload: Mapping[str, Any], *, fetched_at: str = ""
     ) -> ModelCatalog:
+        raw_models = payload.get("data")
+        if not isinstance(raw_models, list):
+            raise CatalogError("OpenRouter catalog data is not a list")
         models: dict[str, ModelInfo] = {}
-        for item in payload.get("data", []):
+        for item in raw_models:
             if not isinstance(item, dict):
                 continue
             model_id = item.get("id")
@@ -66,8 +70,12 @@ class ModelCatalog:
                 pricing.get("completion") if isinstance(pricing, dict) else None
             )
             context = item.get("context_length")
-            context_length = context if isinstance(context, int) else None
+            context_length = (
+                context if isinstance(context, int) and context >= 0 else None
+            )
             supported = item.get("supported_parameters") or []
+            if not isinstance(supported, list):
+                supported = []
             supported_parameters = tuple(
                 value for value in supported if isinstance(value, str)
             )
@@ -165,6 +173,6 @@ def _per_million(value: object) -> float | None:
         number = float(value)
     except (TypeError, ValueError):
         return None
-    if number < 0:
+    if not math.isfinite(number) or number < 0:
         return None
     return number * 1_000_000
