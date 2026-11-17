@@ -211,8 +211,9 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
   reviewer test.
 - Re-check on 2026-11-17 at 10:46 UTC: `curl` receives a 303 redirect to
   `share.streamlit.io/-/auth/app`, so the URL is currently login-gated from
-  this host. **Public access is required.** Re-check in an incognito browser
-  and fix the Streamlit sharing setting before claiming public access.
+  this host. **Public access is required.** Headless Chromium also lands on the
+  Streamlit login page (`<title>Streamlit`), not the app. Fix the Streamlit
+  sharing setting before claiming public access.
 
 ## agx64 public gateway (2026-11-17)
 

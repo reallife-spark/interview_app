@@ -24,8 +24,9 @@ tags:
   200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
-  A later curl on 2026-11-17 received a 303 auth redirect; **public access is
-  required** and must be fixed in Streamlit sharing settings. OpenRouter was
+  A later curl on 2026-11-17 received a 303 auth redirect; headless Chromium
+  loaded the Streamlit login page, not the app. **Public access is required**
+  and must be fixed in Streamlit sharing settings. OpenRouter was
   smoke-tested in headless Chromium on 2026-11-17: live five-question set,
   evaluation, Coach chat, injection refusal, cost display, Markdown export and
   clear all passed. No key was visible. See `DEPLOYMENT.md`.
