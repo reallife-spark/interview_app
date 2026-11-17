@@ -21,7 +21,7 @@ tags:
 - Course alias `rmobil` is a public GitHub user (`Mobil`); the active `gh`
   account is `reallife-spark`.
 - Checks: 79 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
-- Demo evaluation: 18 rows; `json_schema` ranks first in the offline fixture.
+- Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 
 ## Current blocker
 

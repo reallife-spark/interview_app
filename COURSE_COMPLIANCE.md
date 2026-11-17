@@ -42,7 +42,7 @@ user-pasted text is authoritative.
 |---|---|---|
 | Research the interview-preparation domain | `RESEARCH.md`; `BRIEF.md` domain choice | Done |
 | Single-page front-end using Streamlit | `app.py`; three tabs; `ui/_lib/layout.py` | Done |
-| Call OpenRouter | `providers/_lib/openrouter.py`; `Provider.complete(CompletionRequest)` | Done; live key unavailable |
+| Call OpenRouter | `providers/_lib/openrouter.py`; `Provider.complete(CompletionRequest)` | Done; dated live sample 2026-11-17 |
 | Use a course-allowed model | default `openai/gpt-6-luna`; three-model chooser | Done |
 | At least 5 system prompts with different techniques | six techniques in `PromptLibrary`; `PROMPTS.md` | Done |
 | Check which prompt works best | `scripts/evaluate_prompts.py`; `EVALUATION.md`; offline + dated live sample | Done |
@@ -87,21 +87,24 @@ vector database, open-source-only model. These are not unfinished tasks.
 
 ## Link coverage
 
-The LMS page exposes labels but not hrefs. Exact unexposed URLs are marked
-`needs LMS href`; no URL is guessed.
+External LMS link capture is **suspended by owner decision**. Labels are retained
+for traceability; no further href collection or URL guessing.
 
 | Link | Status | Sprint 1 relevance |
 |---|---|---|
 | Completing a Sprint, Submitting a Project and Scheduling Reviews | Captured in brief | Submission/review |
-| Git and GitHub for Beginners | Needs LMS href | Git workflow |
-| OpenRouter Docs | Needs LMS href | API, models, pricing |
+| Git and GitHub for Beginners | Suspended | Git workflow |
+| OpenRouter Docs | Suspended | API, models, pricing |
 | Claude or ChatGPT | External tool | Critique/experimentation |
-| What is the OpenAI API? (DataCamp) | Needs LMS href | API request shape |
-| Streamlit YouTube Channel | Needs LMS href | UI patterns |
-| Five simple starter apps | Needs LMS href | Ideation only |
-| OpenRouter image-generation guide | Needs LMS href; excluded task | Image generation |
+| What is the OpenAI API? (DataCamp) | Suspended | API request shape |
+| Streamlit YouTube Channel | Suspended | UI patterns |
+| Five simple starter apps | Suspended | Ideation only |
+| OpenRouter image-generation guide | Suspended; excluded task | Image generation |
 | OpenRouter models endpoint | Known: `https://openrouter.ai/api/v1/models` | Pricing/model metadata |
 | Turing College GitHub repository | Known; access blocked | Submission |
+
+Suspended means no further action is taken on the link; the label remains in the
+matrix so the gap is visible.
 
 ## What is still blocked
 
@@ -109,7 +112,7 @@ The LMS page exposes labels but not hrefs. Exact unexposed URLs are marked
   account; the course mirror and reviewer access are blocked.
 - Streamlit Cloud deployment, **Submit Project** and review scheduling are
   user-gated.
-- A live prompt-quality evaluation requires an OpenRouter key; no key is
-  available at this time.
+- The project `.env` is absent; the deployment secret must be added by the owner
+  before the public live smoke test.
 - Unauthenticated access to the LMS page returns 404; the user-pasted text is
   the captured source.

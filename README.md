@@ -121,7 +121,7 @@ python scripts/red_team_prompts.py --demo
 
 `scripts/check.sh` runs pytest, Ruff and `PYTHONPATH=src lint-imports`.
 
-Evidence recorded on **2026-11-16** on this host:
+Evidence recorded on **2026-11-17** on this host:
 
 - 79 tests pass.
 - Ruff reports 0 findings.
@@ -162,7 +162,7 @@ This is **implemented and tested**, not a live deployment claim.
 ## Limitations
 
 - The offline evaluation is a fixture, not a live model-quality result.
-- The lexical RAG-lite path is not a vector database; Sprint 2 covers that.
+- The hybrid RAG-lite path is not a vector database; Sprint 2 covers that.
 - The guardrails are rule-based and can miss paraphrased attacks.
 - A public app needs its own OpenRouter key and spend cap; a shared key is not
   provided here.

@@ -75,7 +75,7 @@ A requirement is `done` only after its check passes.
 | X1 | Image generation | Not selected; keeps the public app text-only and cheap |
 | X2 | Excel jailbreak report | Replaced by a reproducible Markdown red-team table |
 | X3 | LangChain | Sprint 2 topic; not needed for Sprint 1 |
-| X4 | Vector database | Sprint 2 topic; lexical RAG-lite is the bounded substitute |
+| X4 | Vector database | Sprint 2 topic; hybrid RAG-lite is the bounded substitute |
 | X5 | Open-source-only model | Course defaults use OpenRouter; local mode is an extra |
 
 ## User-gated checks
@@ -96,8 +96,8 @@ A requirement is `done` only after its check passes.
 - Canonical LMS page:
   `https://intra.turingcollege.com/hardskills/build-an-interview-practice-app`
   (unauthenticated fetch returned 404 on 2026-11-16).
-- External link hrefs were not present in the pasted page; they are marked
-  `needs LMS href` in `COURSE_COMPLIANCE.md`. No URL is guessed.
+- External LMS link capture is suspended by owner decision; no hrefs are
+  collected or guessed. See `COURSE_COMPLIANCE.md`.
 
 ## Evidence rules
 

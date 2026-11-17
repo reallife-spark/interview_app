@@ -197,7 +197,7 @@ cancellation does not refund it. The LMS page is authoritative.
 ## What is not verified here
 
 - No public Streamlit deployment was created from this host.
-- No OpenRouter live call was made unless a later dated run records it.
+- A dated OpenRouter live sample was run on 2026-11-17; the public deployment is still user-gated.
 - No `real-life.dev` deployment was made.
 - No course submission or review was completed.
 - These are user actions with their own credentials and confirmation gates.
