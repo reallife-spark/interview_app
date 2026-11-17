@@ -209,6 +209,9 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 - No key-shaped value appeared in the rendered text or export.
 - This is an automated headless smoke test on 2026-11-17, not a manual
   reviewer test.
+- Re-check on 2026-11-17 at 10:46 UTC: `curl` receives a 303 redirect to
+  `share.streamlit.io/-/auth/app`, so the URL is currently login-gated from
+  this host. Re-verify in a browser before claiming public access.
 
 ## agx64 public gateway (2026-11-17)
 

@@ -7,7 +7,9 @@ and uses OpenRouter.
 
 **Public app:** <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
 It was smoke-tested in OpenRouter mode on 2026-11-17; see `DEPLOYMENT.md` for
-the observed checks and cost. No key is in the repository.
+the observed checks and cost. A later `curl` check on the same date received an
+auth redirect, so public access must be re-verified in a browser. No key is in
+the repository.
 
 ## What it demonstrates
 
