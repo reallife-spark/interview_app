@@ -143,7 +143,7 @@ LOCAL_API_KEY=... ./scripts/smoke_gateway.sh
 
 Evidence recorded on **2026-11-17** on this host:
 
-- 113 tests pass.
+- 114 tests pass.
 - Ruff reports 0 findings.
 - 8 import-linter contracts kept; the pass/fail/revert proof is documented in
   `src/interview_practice/README.md`.

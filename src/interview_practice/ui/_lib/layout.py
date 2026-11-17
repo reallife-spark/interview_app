@@ -98,7 +98,6 @@ def render_app() -> None:
     _show_stats(session, settings)
 
     st.title("Interview Practice Coach")
-    st.caption("Turing College Sprint 1 · job-description-tailored interview practice")
     st.write(
         "Prepare questions, practise a written answer, and use the coach for "
         "follow-up work. Job descriptions and answers are treated as data, not "

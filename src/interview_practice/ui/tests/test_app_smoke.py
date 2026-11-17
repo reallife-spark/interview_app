@@ -27,6 +27,11 @@ def test_app_renders_in_demo_mode(monkeypatch) -> None:
     assert any(item.value == "demo" for item in at.selectbox)
 
 
+def test_app_header_does_not_show_course_caption(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    assert all("Turing College Sprint 1" not in caption.value for caption in at.caption)
+
+
 def test_model_selector_is_visible(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     selector = next(item for item in at.selectbox if item.key == "model_selection")
