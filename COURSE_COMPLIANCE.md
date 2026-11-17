@@ -99,8 +99,10 @@ quality claims.
 | H5 LLM judge | opt-in structured judge; default off | Done: mocked |
 
 The public gateway at `https://real-life.dev/v1` returns 401 without a token and
-200 with it; the Streamlit Cloud secret still needs owner confirmation. The
-`real-life.dev` project card remains suspended.
+200 with it; a thinking-model completion also passes. The Streamlit Cloud secret
+still needs owner confirmation. The public app URL exists but returned a 303
+auth redirect on 2026-11-17; **public sharing is required**. The `real-life.dev`
+project card remains suspended.
 
 ## Evaluation criteria coverage
 

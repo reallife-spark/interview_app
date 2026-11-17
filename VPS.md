@@ -94,6 +94,8 @@ must stay local and must not fall back to OpenRouter.
 ## Operations
 
 - VPS: `sudo systemctl status nginx`, `sudo wg show`, `sudo ufw status`.
+- Repeatable check: `LOCAL_API_KEY=... ./scripts/smoke_gateway.sh` from the
+  project; it never prints the token.
 - agx64: `sudo systemctl status wg0-agx64`, `sudo wg show wg0`,
   `ip -4 addr show wg0`.
 - nginx config: `/etc/nginx/snippets/agx64-gateway.conf` and

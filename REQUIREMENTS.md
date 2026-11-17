@@ -115,7 +115,7 @@ live-model quality claim.
 | G1 | GitHub account is `reallife-spark` and is the intended account | `gh auth status` and `gh api user` checked; email scope unavailable | done |
 | G2 | Private repo `interview_app` may be created | explicit user request; created | done |
 | G3 | Course repo push | `git ls-remote` 403; `gh api`/`curl` 404; active account `reallife-spark` vs alias `rmobil` | blocked |
-| G4 | Streamlit Cloud deployment | public app live; OpenRouter smoke 2026-11-17 | done |
+| G4 | Streamlit Cloud public access | URL exists; 2026-11-17 `curl` returned a 303 auth redirect; public sharing is required | partial: owner action |
 | G5 | Review booked | user action; course mirror still blocked | planned |
 
 ## Course documents

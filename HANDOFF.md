@@ -24,8 +24,8 @@ tags:
   200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
-  A later curl on 2026-11-17 received a 303 auth redirect; re-verify in a browser.
-  OpenRouter was
+  A later curl on 2026-11-17 received a 303 auth redirect; **public access is
+  required** and must be fixed in Streamlit sharing settings. OpenRouter was
   smoke-tested in headless Chromium on 2026-11-17: live five-question set,
   evaluation, Coach chat, injection refusal, cost display, Markdown export and
   clear all passed. No key was visible. See `DEPLOYMENT.md`.
@@ -34,6 +34,16 @@ tags:
 - Gateway: `https://real-life.dev/v1` is implemented; WireGuard handshake and
   public 401/200 checks passed on 2026-11-17. Streamlit Cloud still needs
   `LOCAL_BASE_URL` and `LOCAL_API_KEY` in its secrets.
+
+## Owner actions: public verification
+
+| Action | Exact requirement |
+|---|---|
+| Streamlit Cloud gateway secret | `LOCAL_BASE_URL=https://real-life.dev/v1`; `LOCAL_API_KEY` from the VPS token |
+| Streamlit app sharing | Make the app **public**; a 303 login redirect is not acceptable |
+| Browser smoke | Demo, OpenRouter, `agx64` discovery and one thinking-model completion |
+| Key safety | No key visible in page, export or error |
+| Course/card | Do not push `course`; do not add a `real-life.dev` card |
 
 ## Current blocker
 

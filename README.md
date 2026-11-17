@@ -8,8 +8,8 @@ and uses OpenRouter.
 **Public app:** <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
 It was smoke-tested in OpenRouter mode on 2026-11-17; see `DEPLOYMENT.md` for
 the observed checks and cost. A later `curl` check on the same date received an
-auth redirect, so public access must be re-verified in a browser. No key is in
-the repository.
+auth redirect on re-check. **Public access is required**; re-verify it in a
+browser without a login. No key is in the repository.
 
 ## What it demonstrates
 
@@ -133,6 +133,7 @@ python scripts/evaluate_prompts.py --demo
 python scripts/red_team_prompts.py --demo
 python scripts/compare_settings.py --demo
 python scripts/jailbreak_report.py --demo
+LOCAL_API_KEY=... ./scripts/smoke_gateway.sh
 ```
 
 `scripts/check.sh` runs pytest, Ruff and `PYTHONPATH=src lint-imports`.
