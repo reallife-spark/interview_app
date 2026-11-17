@@ -110,10 +110,11 @@ matrix so the gap is visible.
 
 - The Turing College repository is not writable by the active `reallife-spark`
   account; the course mirror and reviewer access are blocked.
-- The public Streamlit app is deployed, but it currently renders in **Demo —
-  no key**; the OpenRouter live path, **Submit Project** and review scheduling
-  are user-gated.
-- The project `.env` is absent; the deployment secret must be added by the owner
-  before the public live smoke test.
+- The public Streamlit app is deployed and the OpenRouter live path was
+  smoke-tested on 2026-11-17 (question set, evaluation, Coach, safety, cost,
+  export, clear; no key visible). **Submit Project** and review scheduling are
+  user-gated.
+- The project `.env` is absent; the Cloud secret is configured and the public
+  path passed, but local live runs still need the project `.env`.
 - Unauthenticated access to the LMS page returns 404; the user-pasted text is
   the captured source.

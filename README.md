@@ -6,8 +6,8 @@ multi-turn coaching conversation. It is the Turing College Sprint 1 project
 and uses OpenRouter.
 
 **Public app:** <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
-It currently renders in **Demo** mode; add `OPENROUTER_API_KEY` in Streamlit
-Cloud secrets for live model calls.
+It was smoke-tested in OpenRouter mode on 2026-11-17; see `DEPLOYMENT.md` for
+the observed checks and cost. No key is in the repository.
 
 ## What it demonstrates
 

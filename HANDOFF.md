@@ -23,10 +23,10 @@ tags:
 - Checks: 79 tests, Ruff 0, headless Streamlit HTTP 200, vault validation passes.
 - Evaluation: 18-row offline fixture (`json_schema` 9.62) and an 18/18-valid live sample on 2026-11-17 (`cot` 9.45).
 - Public deployment: live at
-  <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>. It rendered in
-  headless Chromium on 2026-11-17, but the provider is **`Demo — no key`**.
-  Add `OPENROUTER_API_KEY` to the Streamlit Cloud secrets; the app should then
-  default to OpenRouter. The full live smoke test is still pending.
+  <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>. OpenRouter was
+  smoke-tested in headless Chromium on 2026-11-17: live five-question set,
+  evaluation, Coach chat, injection refusal, cost display, Markdown export and
+  clear all passed. No key was visible. See `DEPLOYMENT.md`.
 - Project `.env`: absent; the vault-root `.env` is not read. Add the rotated key
   to the project `.env` for local live runs, or to Streamlit Cloud secrets.
 
@@ -111,13 +111,14 @@ git push -u course main
 - Do not commit `.env`, `.venv`, keys or tokens.
 - Do not force-push.
 - Do not push to the course repo before access is verified.
-- Do not claim a live OpenRouter deployment or a completed review. The public
-  page exists; it is currently Demo-only until the Streamlit secret is added.
+- Do not claim a manual reviewer test or a completed course review. The public
+  OpenRouter path was smoke-tested on 2026-11-17; the course mirror is still
+  blocked.
 
 ## After the course push
 
 - Update `DEPLOYMENT.md` and the LMS evidence with the actual course URL.
-- Add `OPENROUTER_API_KEY` to the already-deployed Streamlit Cloud app and
-  re-run the live smoke test.
+- Verify the already-configured Streamlit Cloud secret before submission; the
+  public live smoke passed on 2026-11-17.
 - Add the `real-life.dev` project card.
 - Submit and schedule the review.

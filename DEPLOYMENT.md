@@ -192,17 +192,22 @@ For the public app, `.env` is not present. Streamlit Cloud reads secrets through
 
 ### Public smoke status (2026-11-17)
 
-- The URL renders in headless Chromium from this host; title:
+- The URL rendered in headless Chromium from this host; title:
   `Interview Practice Coach · Streamlit`.
-- The app iframe renders the Prepare/Practice/Coach UI.
-- Provider is **`Demo — no key`**; a demo question set rendered successfully.
-- This is not a live OpenRouter smoke test. The app selects OpenRouter by
-  default when `OPENROUTER_API_KEY` is present; seeing Demo indicates the
-  Streamlit secret is missing (or the provider was explicitly forced to demo).
-- Still unverified on the public app: live OpenRouter question set, answer
-  evaluation, Coach chat, safety refusal/block, cost display, export and clear.
-- **Owner action:** add `OPENROUTER_API_KEY` in the Streamlit Cloud app settings,
-  save/reboot, then re-check that the provider switches to OpenRouter.
+- Provider: **`OpenRouter — public`**; model: `openai/gpt-6-luna`.
+- Live question set: five questions rendered.
+- Live structured answer evaluation rendered, including improved answer and
+  next steps.
+- Live Coach follow-up rendered.
+- Safety: a prompt-injection request was refused; the UI also flagged
+  `ignore_previous` and `reveal_prompt` patterns.
+- Cost display: calls/session cost/last-call usage visible; the run used four
+  calls and about `$0.000841` before clear.
+- Export chat (Markdown) downloaded `interview-practice-chat.md`.
+- Clear session reset the UI to `Calls 0/20` and `Session cost $0.00`.
+- No key-shaped value appeared in the rendered text or export.
+- This is an automated headless smoke test on 2026-11-17, not a manual
+  reviewer test.
 
 Streamlit Cloud cannot reach the local `agx64` tunnel. Local mode is documented
 as a developer path only.
@@ -250,13 +255,12 @@ cancellation does not refund it. The LMS page is authoritative.
 
 ## What is not verified here
 
-- The public Streamlit page is deployed and rendered in headless Chromium on
-  2026-11-17; it is currently **Demo only**, not a live OpenRouter smoke test.
-- A dated OpenRouter live sample was run locally on 2026-11-17; the public
-  OpenRouter path is still blocked on the Streamlit secret.
+- The public Streamlit page was smoke-tested in **OpenRouter mode** in headless
+  Chromium on 2026-11-17: five-question generation, evaluation, Coach chat,
+  safety refusal, cost display, Markdown export and clear all passed.
+- A dated OpenRouter evaluation sample was also run locally on 2026-11-17.
 - No `real-life.dev` deployment was made.
 - No course submission or review was completed.
-- The project `.env` is absent; the key must be placed there by the owner for
-  local live runs, or in Streamlit Cloud secrets for the public app. The public
-  app currently shows Demo, so the Streamlit secret is not configured.
+- The project `.env` is absent; the Cloud secret is configured and the public
+  live path passed, but local live runs still need the project `.env`.
 - These are user actions with their own credentials and confirmation gates.
