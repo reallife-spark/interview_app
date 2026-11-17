@@ -150,6 +150,23 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
         selection = by_key[selected_key]
         settings = apply_model_selection(base, selection)
 
+        st.caption(f"agx64 gateway: `{base.local_base_url}`")
+        if st.button(
+            "Discover agx64 models",
+            key="discover_local_models",
+            use_container_width=True,
+        ):
+            try:
+                discovered = discover_local_models(base)
+            except Exception as exc:
+                st.warning(f"Could not discover agx64 models: {exc}")
+            else:
+                if discovered:
+                    st.session_state["local_models"] = discovered
+                    st.rerun()
+                else:
+                    st.warning("The agx64 gateway returned no models.")
+
         if selection.provider == "openrouter":
             if not base.openrouter_api_key:
                 st.warning(
@@ -171,15 +188,6 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
                 None if reasoning_choice == "none" else reasoning_choice
             )
         elif selection.provider == "local":
-            st.caption(f"agx64 gateway: `{base.local_base_url}`")
-            if st.button("Discover agx64 models", use_container_width=True):
-                try:
-                    discovered = discover_local_models(base)
-                except Exception as exc:
-                    st.warning(f"Could not discover agx64 models: {exc}")
-                else:
-                    st.session_state["local_models"] = discovered
-                    st.rerun()
             reasoning_effort = None
         else:
             st.caption("Deterministic fixtures. No network, no key, no cost.")

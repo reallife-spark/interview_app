@@ -88,7 +88,7 @@ LOCAL_API_KEY = "the server-side gateway token"
 ```
 
 Do not put the token in the repository, a page or a chat message. After saving,
-select an `agx64` model in the app and run **Discover agx64 models**; a failure
+click **Discover agx64 models** in the app and then select an `agx64` model; a failure
 must stay local and must not fall back to OpenRouter.
 
 ## Operations

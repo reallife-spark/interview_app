@@ -49,6 +49,23 @@ def test_local_model_option_can_be_selected(monkeypatch) -> None:
     )
 
 
+def test_discover_local_models_without_configured_model(monkeypatch) -> None:
+    monkeypatch.setenv("PROVIDER", "demo")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("LOCAL_MODEL", raising=False)
+    monkeypatch.setattr(
+        "interview_practice.ui._lib.layout.discover_local_models",
+        lambda settings: ["qwen3-vl-4b-65k:latest"],
+    )
+    at = AppTest.from_file(APP, default_timeout=30).run()
+    assert not at.exception
+    button = _button(at, "discover_local_models")
+    button.click().run()
+    assert not at.exception
+    selector = next(item for item in at.selectbox if item.key == "model_selection")
+    assert "agx64 - qwen3-vl-4b-65k:latest" in selector.options
+
+
 def test_persona_selector_is_visible(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     assert any(item.key == "interviewer_persona" for item in at.selectbox)

@@ -87,8 +87,9 @@ This runs tests, Ruff and the import-boundary gate.
 
 The mode is selected with the single **Model** selector under
 **Settings → Developer settings**. It lists Demo, the three OpenRouter course
-models and any discovered `agx64` models. In `agx64` mode, use **Discover agx64
-models** to refresh the list from the configured gateway.
+models and any discovered `agx64` models. Click **Discover agx64 models** to
+refresh the list from the configured gateway first; the selector then includes
+the `agx64` options.
 
 There is **no silent fallback** from local mode to OpenRouter. If a local call
 fails, the app reports the failure; it does not send a private job description
