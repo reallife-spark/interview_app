@@ -28,24 +28,6 @@ No key is in the repository.
 - Optional Chroma question memory, LangChain runtime and OpenRouter image generation.
 - A public `agx64` path through the authenticated `real-life.dev` VPS gateway.
 
-## Quick start
-
-```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements-dev.txt
-cp .env.example .env
-# Add OPENROUTER_API_KEY to .env, or leave it empty for demo mode.
-# The app loads .env automatically; never commit it.
-streamlit run app.py
-```
-
-Open `http://localhost:8501`.
-
-> If this project lives inside the AIengin vault, keep `.venv` outside the
-> vault or remove it before `./scripts/validate.sh`: the vault's secret-file
-> scan treats bundled certificate `.pem` files as secret-shaped.
-
 ## Modes
 
 | Mode | Network | Key | Use |
