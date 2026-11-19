@@ -17,14 +17,14 @@ No key is in the repository.
 
 - A real Streamlit UI with **Prepare**, **Practice** and **Coach** surfaces.
 - Six system-prompt techniques, selectable in the developer settings.
-- Two structured JSON outputs: `QuestionSet` and `AnswerEvaluation`.
+- Two structured JSON outputs: `QuestionSet` and `AnswerEvaluation` (score 0–100).
 - A defensive system prompt plus input/output guardrails for off-topic and
   prompt-injection attempts.
 - Job-description tailoring with a bounded hybrid RAG-lite path (BM25 + hashed vectors + RRF).
 - Model settings, model chooser, live catalog pricing, last-call usage and session caps.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
-- Structured interviewer rubrics with one schema-repair retry, an opt-in LLM judge, and an Excel red-team report.
+- Structured interviewer rubrics and answer evaluations with tolerant integer parsing and one schema-repair retry each; evaluator scores are 0–100. Opt-in LLM judge and Excel red-team report.
 - Optional Chroma question memory on an OpenAI-compatible embedding adapter and an optional LangChain runtime. The image-generation module is backend-only and is not exposed in the UI.
 - Budget-aware structured prompts and explicit output-cap errors instead of generic invalid-JSON failures.
 - Reasoning effort gated by model metadata, with a visible one-time fallback when a model rejects it.

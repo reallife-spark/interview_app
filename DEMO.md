@@ -132,5 +132,9 @@ tunnel.
 - OpenRouter mode needs `OPENROUTER_API_KEY`; the error is shown in the sidebar.
 - Local mode needs the tunnel at `http://127.0.0.1:21464/v1`; a local failure
   never falls back to OpenRouter.
-- If a JSON parse fails, switch to `JSON schema` or try again; the app does not
-  invent a result.
+- If a question-set parse fails, switch to `JSON schema` or try again; the app
+  does not invent a result.
+- Rubric and evaluation replies get one schema-repair call that includes the
+  validation reason; a second failure reports the specific field. Evaluation
+  scores are integers 0–100 and empty coaching lists are valid.
+- A truncated reply reports the output cap and is not retried as a schema error.

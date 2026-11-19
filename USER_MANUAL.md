@@ -163,11 +163,17 @@ answer points. The raw `QuestionSet` JSON is available in an expander.
 
 - **Question** — choose from the generated set.
 - **Your answer** — write the answer you would give.
-- **Evaluate answer** — one structured model call.
+- **Evaluate answer** — one structured model call, or a second repair call if the first reply misses the schema.
 
-The result shows score, summary, strengths, gaps, improved answer, next steps
-and raw `AnswerEvaluation` JSON. If **LLM judge** is enabled, **Run LLM judge**
-adds a separate structured score; it is not the same as the first-pass score.
+The result shows score (integer 0–100), summary, strengths, gaps, improved answer,
+next steps and raw `AnswerEvaluation` JSON. Empty lists are valid for a strong
+answer with no gaps or an answer that needs no next step. If the first reply
+misses the schema, the app retries once with the validation reason and shows an
+`Evaluation required one schema repair` warning; the extra call appears in
+session usage. A second failure reports the specific field instead of a generic
+invalid-JSON message. A truncated reply reports the output cap and is not retried
+as a schema error. If **LLM judge** is enabled, **Run LLM judge** adds a separate
+structured score; it is not the same as the first-pass score.
 
 ### Coach tab
 

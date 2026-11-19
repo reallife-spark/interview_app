@@ -185,10 +185,13 @@ and asks the model to repeat the role. A missing role is filled from the
 request, and integral floats or digit strings are accepted as weights.
 
 The parser accepts a fenced JSON block, a short preamble and trailing prose, but
-rejects arrays, invalid JSON and missing keys. If the first rubric object fails
-validation, the app makes one repair call with the validation reason; a second
-failure shows a specific error. A response truncated by the output cap is not
-retried as a schema error.
+rejects arrays, invalid JSON and missing keys. Both the rubric and evaluation
+prompts state their integer scale explicitly; the evaluation score is 0–100, and
+integral floats or digit strings are accepted as either a score or a weight.
+Empty `strengths`, `gaps` and `next_steps` lists are valid. If the first rubric or
+evaluation object fails validation, the app makes one repair call with the
+validation reason; a second failure shows a specific error. A response truncated
+by the output cap is not retried as a schema error.
 
 Structured prompts also carry a budget note: the model is told the hard output
 cap and asked to keep the whole object concise. If a response is cut off at the
