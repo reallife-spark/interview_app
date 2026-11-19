@@ -24,8 +24,10 @@ No key is in the repository.
 - Model settings, model chooser, live catalog pricing, last-call usage and session caps.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
-- Structured interviewer rubrics, an opt-in LLM judge, and an Excel red-team report.
-- Optional Chroma question memory, LangChain runtime and OpenRouter image generation.
+- Structured interviewer rubrics with one schema-repair retry, an opt-in LLM judge, and an Excel red-team report.
+- Optional Chroma question memory on an OpenAI-compatible embedding adapter, LangChain runtime and OpenRouter image generation.
+- Budget-aware structured prompts and explicit output-cap errors instead of generic invalid-JSON failures.
+- Reasoning effort gated by model metadata, with a visible one-time fallback when a model rejects it.
 - A public `agx64` path through the authenticated `real-life.dev` VPS gateway.
 
 ## Modes
