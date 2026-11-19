@@ -35,6 +35,17 @@ EVALUATION_JSON = json.dumps(
     }
 )
 
+BAD_EVALUATION_JSON = json.dumps(
+    {
+        "score": 108,
+        "summary": "Clear and specific.",
+        "strengths": ["names a metric"],
+        "gaps": ["no rollback rule"],
+        "improved_answer": "Add a release gate.",
+        "next_steps": ["write the gate"],
+    }
+)
+
 
 class StaticProvider:
     name = "fake"
@@ -239,6 +250,68 @@ def test_evaluate_answer_returns_evaluation() -> None:
     )
     assert result.evaluation.score == 82
     assert engine.session.calls == 1
+
+
+def test_evaluate_answer_repairs_invalid_schema_once() -> None:
+    provider = StaticProvider([BAD_EVALUATION_JSON, EVALUATION_JSON])
+    engine = make_engine(provider)
+    result = engine.evaluate_answer(question="q", answer="a")
+    assert result.evaluation.score == 82
+    assert provider.calls == 2
+    assert engine.session.calls == 2
+    assert any("one schema repair" in warning for warning in result.warnings)
+
+
+def test_evaluate_answer_repair_message_names_validation_reason() -> None:
+    provider = StaticProvider([BAD_EVALUATION_JSON, EVALUATION_JSON])
+    engine = make_engine(provider)
+    engine.evaluate_answer(question="q", answer="a")
+    repair = provider.last_messages[-1].content
+    assert "score must be 0-100" in repair
+    assert "one JSON object" in repair
+
+
+def test_evaluate_answer_does_not_repair_truncated_output() -> None:
+    provider = StaticProvider(
+        [BAD_EVALUATION_JSON, EVALUATION_JSON],
+        finish_reasons=["length", ""],
+    )
+    engine = make_engine(provider)
+    with pytest.raises(EngineError, match="truncated"):
+        engine.evaluate_answer(question="q", answer="a")
+    assert provider.calls == 1
+
+
+def test_evaluate_answer_reports_specific_reason_after_failed_repair() -> None:
+    provider = StaticProvider([BAD_EVALUATION_JSON, BAD_EVALUATION_JSON])
+    engine = make_engine(provider)
+    with pytest.raises(EngineError) as error:
+        engine.evaluate_answer(question="q", answer="a")
+    message = str(error.value)
+    assert "score must be 0-100" in message
+    assert "Try again or switch prompt technique" not in message
+    assert provider.calls == 2
+
+
+def test_evaluate_answer_repair_sends_json_response_format() -> None:
+    provider = StaticProvider([BAD_EVALUATION_JSON, EVALUATION_JSON])
+    catalog = ModelCatalog(
+        models={
+            "demo/interview-coach": ModelInfo(
+                id="demo/interview-coach",
+                supported_parameters=("response_format",),
+            )
+        }
+    )
+    engine = InterviewEngine(
+        Settings(provider="demo"),
+        provider=provider,
+        catalog=catalog,
+    )
+    engine.evaluate_answer(question="q", answer="a")
+    assert provider.calls == 2
+    assert provider.last_request is not None
+    assert provider.last_request.response_format == {"type": "json_object"}
 
 
 def test_chat_returns_reply() -> None:

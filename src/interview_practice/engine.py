@@ -367,10 +367,43 @@ class InterviewEngine:
         except SchemaError as exc:
             if self._is_truncated(completion):
                 raise EngineError(self._truncation_message("evaluation")) from exc
-            raise EngineError(
-                "The model returned an invalid evaluation JSON object. "
-                "Try again or switch prompt technique."
-            ) from exc
+            repair = ChatMessage(
+                "user",
+                "The previous evaluation did not match the schema: "
+                f"{exc}. Return one JSON object only. Use exactly these keys: "
+                "score, summary, strengths, gaps, improved_answer, next_steps. "
+                "score must be an integer from 0 to 100. Empty list values are "
+                "allowed.",
+            )
+            repair_messages = [
+                *messages[:-1],
+                ChatMessage("user", messages[-1].content + "\n\n" + repair.content),
+            ]
+            completion, usage = self._call(
+                repair_messages,
+                response_format={"type": "json_object"},
+            )
+            self._add_notice(completion, warnings)
+            guarded = self._check_output(completion.text)
+            self._extend_unique(warnings, guarded.warnings)
+            try:
+                evaluation = validate_answer_evaluation(
+                    parse_json_object(guarded.text)
+                )
+            except SchemaError as retry_exc:
+                if self._is_truncated(completion):
+                    raise EngineError(
+                        self._truncation_message("evaluation")
+                    ) from retry_exc
+                raise EngineError(
+                    "The model returned an invalid evaluation: "
+                    f"{retry_exc}. Try again, raise Max output tokens, or "
+                    "switch models."
+                ) from retry_exc
+            self._extend_unique(
+                warnings,
+                (f"Evaluation required one schema repair: {exc}.",),
+            )
         self.session.last_question = question
         self.session.last_answer = answer
         return EvaluationResult(
