@@ -32,7 +32,7 @@ QUESTION_SET_SCHEMA_HINT = """{
 }"""
 
 ANSWER_EVALUATION_SCHEMA_HINT = """{
-  "score": 85,
+  "score": 0,
   "summary": "string",
   "strengths": ["string"],
   "gaps": ["string"],
@@ -218,9 +218,17 @@ def answer_evaluation_messages(
         <Answer>{escape(answer.strip() or "Not provided")}</Answer>
         {_job_description_block(job_description)}
 
-        Score the answer against the question and the role. Be specific and
-        constructive. `score` must be an integer from 0 to 100 (0 = poor,
-        100 = excellent), not a string, a decimal, or a 0-10 / 1-5 scale.
+        Score the answer against the question and the role. Every value in the
+        JSON shape below is a placeholder, not a suggested score or phrase. The
+        score must follow how directly and correctly the answer addresses the
+        question, not how well written it is. Use these bands:
+        0-20 = the answer does not answer the question, is off-topic or invents facts;
+        21-50 = it mentions the topic but misses what was asked;
+        51-75 = it answers the question with clear gaps or unsupported claims;
+        76-90 = it directly and correctly answers with specific support;
+        91-100 = complete, accurate and well-evidenced with no material gaps.
+        `score` must be an integer from 0 to 100, not a string, a decimal, or a
+        0-10 / 1-5 scale. A low score is expected for an irrelevant answer.
         `strengths`, `gaps` and `next_steps` are lists of short strings and may
         be empty. Return one JSON object with exactly these keys,
         no markdown fences and no extra prose:

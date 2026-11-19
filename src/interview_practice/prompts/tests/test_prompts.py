@@ -286,6 +286,37 @@ def test_answer_evaluation_prompt_states_score_range() -> None:
     assert "no markdown fences" in user
 
 
+def _evaluation_prompt() -> str:
+    return library.answer_evaluation(
+        "json_schema",
+        question="What is RAG?",
+        answer="I like pizza.",
+        job_description="",
+        canary="canary-123",
+    )[-1].content
+
+
+def test_answer_evaluation_hint_uses_neutral_score_placeholder() -> None:
+    user = _evaluation_prompt()
+    assert '"score": 85' not in user
+    assert '"score": 0' in user
+
+
+def test_answer_evaluation_prompt_marks_example_values_as_placeholders() -> None:
+    assert "placeholder" in _evaluation_prompt().lower()
+
+
+def test_answer_evaluation_prompt_defines_relevance_bands() -> None:
+    user = _evaluation_prompt()
+    assert "does not answer the question" in user
+    for band in ("0-20", "21-50", "51-75", "76-90", "91-100"):
+        assert band in user
+
+
+def test_answer_evaluation_prompt_ties_score_to_question() -> None:
+    assert "directly and correctly" in _evaluation_prompt()
+
+
 def test_domain_and_style_are_applied() -> None:
     prompt = library.system_prompt(
         "json_schema",
