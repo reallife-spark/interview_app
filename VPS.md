@@ -85,9 +85,14 @@ Streamlit Cloud --HTTPS--> https://real-life.dev/v1
   output cap on the local path by default (`LOCAL_UNCAPPED_OUTPUT=true`) so a
   thinking model can emit visible content; set it to `false` to restore the
   `MAX_OUTPUT_TOKENS` cap. The local client timeout is `LOCAL_TIMEOUT_SECONDS=330`
-  and the nginx example gateway timeout is 360s; the owner must apply the live
-  nginx change and confirm a visible answer on agx64 (not verified from this
-  host). Use a non-thinking model for a short UI smoke.
+  and the gateway timeout is 360s. On 2026-11-19 the owner confirmed a visible
+  agx64 answer in the deployed Cloud UI, and the live nginx change was applied on
+  `megasrv`: `/etc/nginx/snippets/agx64-gateway.conf` send/read timeouts 300s→360s
+  in all three `/v1/*` locations, with backup
+  `/etc/nginx/snippets/agx64-gateway.conf.pre-uncap-2026-11-19`; `nginx -t` passed
+  and nginx reloaded (healthz/root 200, models 401 without token). No token was
+  read or echoed, and no agx64 completion was run from this host. Use a
+  non-thinking model for a short UI smoke.
 
 ## User action: wire the Cloud app
 
@@ -111,7 +116,9 @@ must stay local and must not fall back to OpenRouter.
   `ip -4 addr show wg0`.
 - nginx config: `/etc/nginx/snippets/agx64-gateway.conf` and
   `/etc/nginx/conf.d/agx64-gateway-map.conf`; site backup:
-  `/etc/nginx/sites-available/real-life-dev.pre-agx64-2026-11-17`.
+  `/etc/nginx/sites-available/real-life-dev.pre-agx64-2026-11-17`; gateway snippet
+  pre-timeout-change backup:
+  `/etc/nginx/snippets/agx64-gateway.conf.pre-uncap-2026-11-19`.
 - Token rotation: replace `/etc/nginx/agx64-gateway-token`, update the token in
   the map file and Streamlit secrets, run `sudo nginx -t && sudo systemctl
   reload nginx`. Never print the token.
