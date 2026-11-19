@@ -24,7 +24,7 @@ class CompletionRequest:
     messages: Sequence[ChatMessage]
     model: str
     temperature: float
-    max_tokens: int
+    max_tokens: int | None
     top_p: float
     reasoning_effort: str | None = None
     response_format: Mapping[str, Any] | None = None

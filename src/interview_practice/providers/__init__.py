@@ -49,6 +49,7 @@ def build_provider(
             api_key=settings.local_api_key,
             default_model=settings.local_model,
             session=session,
+            timeout=settings.local_timeout_seconds,
         )
     if settings.provider == "demo":
         return DemoProvider()

@@ -137,7 +137,10 @@ embeddings; it is not a general proxy.
 - **Discover agx64 models** — lazy refresh of the local model list from the
   configured gateway.
 - **Prompt technique** — the six prompt variants.
-- **Temperature**, **Max output tokens**, **Top-p** — model settings.
+- **Temperature**, **Max output tokens**, **Top-p** — model settings. On the
+  `agx64`/local path the token cap is omitted by default
+  (`LOCAL_UNCAPPED_OUTPUT=true`) so thinking models can finish; set it to `false`
+  to apply **Max output tokens** there. OpenRouter always applies the cap.
 - **Reasoning effort** — available in OpenRouter mode.
 - **Strict safety** — block known injection patterns instead of warning.
 - **Lexical RAG-lite** — select relevant job-description chunks.
@@ -281,7 +284,7 @@ is blocked, try again in soft mode or clear the session.
 | `canary leaked in output` | The model revealed the exact session token; clear the session. A benign mention of the word "canary" no longer triggers this warning |
 | `agx64` fails | Check the public gateway and `LOCAL_BASE_URL`; the older SSH tunnel is `http://127.0.0.1:21464/v1` |
 | Cloud cannot reach `agx64` | Check `LOCAL_BASE_URL` and `LOCAL_API_KEY` in Streamlit secrets; gateways return 401/200 |
-| Local thinking model returns empty content | The reasoning used the output cap; use a non-thinking model such as `gemma4-2b-131k:latest`, or raise **Max output tokens** |
+| Local thinking model returns empty content | By default the local/agx64 path omits the token cap so reasoning models can emit a visible answer; if you re-enabled it with `LOCAL_UNCAPPED_OUTPUT=false` and reasoning consumes the cap, raise **Max output tokens** on that path or use a non-thinking model such as `gemma4-2b-131k:latest`. OpenRouter stays capped |
 | Session cap reached | Clear the session, or start with `PROVIDER=demo` for offline use |
 | Clear session does not reset | Refresh the browser; session state is in memory |
 

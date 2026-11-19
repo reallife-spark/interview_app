@@ -246,6 +246,68 @@ def test_local_provider_autodetects_model_and_has_no_cost() -> None:
     assert session.last_post[1]["json"]["model"] == "qwen-local"
 
 
+def test_local_omits_max_tokens_when_uncapped() -> None:
+    session = FakeSession(
+        post_response=FakeResponse(
+            {
+                "model": "qwen3-vl-4b-65k:latest",
+                "choices": [{"message": {"content": "visible answer"}}],
+                "usage": {},
+            }
+        )
+    )
+    provider = build_provider(
+        Settings(provider="local", local_base_url="http://127.0.0.1:21464/v1"),
+        session=session,
+    )
+    provider.complete(_request(model="qwen3-vl-4b-65k:latest", max_tokens=None))
+    assert "max_tokens" not in session.last_post[1]["json"]
+
+
+def test_local_keeps_max_tokens_when_capped() -> None:
+    session = FakeSession(
+        post_response=FakeResponse(
+            {
+                "model": "qwen3-vl-4b-65k:latest",
+                "choices": [{"message": {"content": "visible answer"}}],
+                "usage": {},
+            }
+        )
+    )
+    provider = build_provider(
+        Settings(provider="local", local_base_url="http://127.0.0.1:21464/v1"),
+        session=session,
+    )
+    provider.complete(_request(model="qwen3-vl-4b-65k:latest", max_tokens=900))
+    assert session.last_post[1]["json"]["max_tokens"] == 900
+
+
+def test_openrouter_keeps_max_tokens() -> None:
+    session = FakeSession(
+        post_response=FakeResponse(
+            {
+                "model": "openai/gpt-6-luna",
+                "choices": [{"message": {"content": "ok"}}],
+                "usage": {},
+            }
+        )
+    )
+    provider = build_provider(_openrouter_settings(), session=session)
+    provider.complete(_request(max_tokens=1200))
+    assert session.last_post[1]["json"]["max_tokens"] == 1200
+
+
+def test_factory_local_uses_configured_timeout() -> None:
+    provider = build_provider(
+        Settings(
+            provider="local",
+            local_base_url="http://127.0.0.1:21464/v1",
+            local_timeout_seconds=330.0,
+        )
+    )
+    assert provider._timeout == 330.0  # noqa: SLF001 - test inspects injected timeout
+
+
 def test_local_provider_reports_thinking_model_token_cap() -> None:
     session = FakeSession(
         post_response=FakeResponse(

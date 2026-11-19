@@ -594,7 +594,12 @@ class InterviewEngine:
         supports_reasoning = bool(
             model_info and model_info.supports("reasoning")
         )
-        max_tokens = min(self.settings.max_tokens, self.settings.max_output_tokens)
+        max_tokens: int | None = (
+            None
+            if self.settings.provider == "local"
+            and self.settings.local_uncapped_output
+            else min(self.settings.max_tokens, self.settings.max_output_tokens)
+        )
         request = CompletionRequest(
             messages=messages,
             model=model,

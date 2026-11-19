@@ -83,9 +83,10 @@ class OpenAILocalProvider:
             "model": chosen_model,
             "messages": [message.as_dict() for message in request.messages],
             "temperature": request.temperature,
-            "max_tokens": request.max_tokens,
             "top_p": request.top_p,
         }
+        if request.max_tokens is not None:
+            payload["max_tokens"] = request.max_tokens
         if request.response_format:
             payload["response_format"] = request.response_format
 

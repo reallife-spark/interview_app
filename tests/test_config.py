@@ -24,6 +24,8 @@ ENV_NAMES = (
     "LOCAL_BASE_URL",
     "LOCAL_API_KEY",
     "LOCAL_MODEL",
+    "LOCAL_UNCAPPED_OUTPUT",
+    "LOCAL_TIMEOUT_SECONDS",
     "QUESTION_MEMORY_DUPLICATE_DISTANCE",
 )
 
@@ -67,6 +69,27 @@ def test_openrouter_timeout_is_coerced_and_validated() -> None:
             model=DEFAULT_MODEL,
             openrouter_timeout_seconds=0,
         ).validate()
+
+
+def test_local_uncapped_output_defaults_true_and_is_overridable(monkeypatch) -> None:
+    _clear(monkeypatch)
+    assert Settings.from_env(load_env_file=False).local_uncapped_output is True
+    monkeypatch.setenv("LOCAL_UNCAPPED_OUTPUT", "false")
+    assert Settings.from_env(load_env_file=False).local_uncapped_output is False
+    secret = apply_secret_values(
+        Settings(provider="local"), {"LOCAL_UNCAPPED_OUTPUT": "false"}
+    )
+    assert secret.local_uncapped_output is False
+
+
+def test_local_timeout_is_coerced_and_validated() -> None:
+    assert Settings().local_timeout_seconds == 330.0
+    secret = apply_secret_values(
+        Settings(provider="local"), {"LOCAL_TIMEOUT_SECONDS": "420"}
+    )
+    assert secret.local_timeout_seconds == 420.0
+    with pytest.raises(ValueError, match="local_timeout"):
+        Settings(provider="local", local_timeout_seconds=0).validate()
 
 
 def test_key_selects_openrouter(monkeypatch) -> None:

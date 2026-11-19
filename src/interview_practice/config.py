@@ -236,6 +236,8 @@ class Settings:
     local_base_url: str = LOCAL_BASE_URL
     local_api_key: str = field(default="", repr=False)
     local_model: str = ""
+    local_uncapped_output: bool = True
+    local_timeout_seconds: float = 330.0
     enable_question_memory: bool = False
     question_memory_path: str = ".chroma"
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
@@ -292,6 +294,8 @@ class Settings:
             or LOCAL_BASE_URL,
             local_api_key=os.getenv("LOCAL_API_KEY", "").strip(),
             local_model=os.getenv("LOCAL_MODEL", "").strip(),
+            local_uncapped_output=_env_bool("LOCAL_UNCAPPED_OUTPUT", True),
+            local_timeout_seconds=_env_float("LOCAL_TIMEOUT_SECONDS", 330.0),
             enable_question_memory=_env_bool("ENABLE_QUESTION_MEMORY", False),
             question_memory_path=os.getenv(
                 "QUESTION_MEMORY_PATH", ".chroma"
@@ -334,8 +338,11 @@ class Settings:
                 raise ValueError("OPENROUTER_APP_URL must be an HTTP(S) URL")
             if self.openrouter_timeout_seconds <= 0:
                 raise ValueError("openrouter_timeout_seconds must be positive")
-        if self.provider == "local" and not self.local_base_url:
-            raise ValueError("LOCAL_BASE_URL is required for local mode")
+        if self.provider == "local":
+            if not self.local_base_url:
+                raise ValueError("LOCAL_BASE_URL is required for local mode")
+            if self.local_timeout_seconds <= 0:
+                raise ValueError("local_timeout_seconds must be positive")
         if not 0.0 <= self.temperature <= 2.0:
             raise ValueError("temperature must be between 0 and 2")
         if not 0.0 <= self.top_p <= 1.0:
@@ -387,6 +394,8 @@ SECRET_KEYS = frozenset(
         "LOCAL_API_KEY",
         "LOCAL_BASE_URL",
         "LOCAL_MODEL",
+        "LOCAL_UNCAPPED_OUTPUT",
+        "LOCAL_TIMEOUT_SECONDS",
         "TEMPERATURE",
         "MAX_OUTPUT_TOKENS",
         "MAX_CALLS",
@@ -491,6 +500,11 @@ def apply_secret_values(
             "openrouter_timeout_seconds",
             settings.openrouter_timeout_seconds,
         ),
+        (
+            "LOCAL_TIMEOUT_SECONDS",
+            "local_timeout_seconds",
+            settings.local_timeout_seconds,
+        ),
     ):
         if source in values:
             if target in {
@@ -500,6 +514,7 @@ def apply_secret_values(
                 "global_max_cost_per_day",
                 "question_memory_duplicate_distance",
                 "openrouter_timeout_seconds",
+                "local_timeout_seconds",
             }:
                 updates[target] = _coerce_float(values[source], default)
             else:
@@ -513,6 +528,7 @@ def apply_secret_values(
         updates["max_tokens"] = max_output
 
     for source, target in (
+        ("LOCAL_UNCAPPED_OUTPUT", "local_uncapped_output"),
         ("STRICT_SAFETY", "strict_safety"),
         ("ENABLE_LEXICAL_RAG", "enable_lexical_rag"),
         ("ENABLE_QUESTION_MEMORY", "enable_question_memory"),

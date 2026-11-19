@@ -80,9 +80,14 @@ Streamlit Cloud --HTTPS--> https://real-life.dev/v1
   `READY`. No key was visible. `qwen3-vl-4b-65k:latest` exhausted the
   1,200-token cap on reasoning (`finish_reason=length`,
   `completion_tokens=1200`) and emitted no visible content; a 4,096-token
-  diagnostic did not finish within 300s. Use a non-thinking model for a short
-  UI smoke. The provider now reports the cap and finish reason without exposing
-  reasoning text.
+  diagnostic did not finish within 300s. The provider reports the cap and finish
+  reason without exposing reasoning text. As of 2026-11-19 the app omits the
+  output cap on the local path by default (`LOCAL_UNCAPPED_OUTPUT=true`) so a
+  thinking model can emit visible content; set it to `false` to restore the
+  `MAX_OUTPUT_TOKENS` cap. The local client timeout is `LOCAL_TIMEOUT_SECONDS=330`
+  and the nginx example gateway timeout is 360s; the owner must apply the live
+  nginx change and confirm a visible answer on agx64 (not verified from this
+  host). Use a non-thinking model for a short UI smoke.
 
 ## User action: wire the Cloud app
 

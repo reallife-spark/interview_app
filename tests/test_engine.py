@@ -128,6 +128,44 @@ def test_chat_warns_when_output_cap_reached() -> None:
     assert any("output cap" in warning for warning in result.warnings)
 
 
+def test_local_uncapped_sends_no_max_tokens() -> None:
+    provider = StaticProvider(["Local reply"])
+    settings = Settings(provider="local", local_model="qwen3-vl-4b-65k:latest")
+    engine = InterviewEngine(settings, provider=provider)
+    engine.chat(user_message="Hello", history=[])
+    assert provider.last_request is not None
+    assert provider.last_request.max_tokens is None
+
+
+def test_local_capped_sends_effective_max_tokens() -> None:
+    provider = StaticProvider(["Local reply"])
+    settings = Settings(
+        provider="local",
+        local_model="qwen3-vl-4b-65k:latest",
+        local_uncapped_output=False,
+        max_tokens=900,
+        max_output_tokens=700,
+    )
+    engine = InterviewEngine(settings, provider=provider)
+    engine.chat(user_message="Hello", history=[])
+    assert provider.last_request is not None
+    assert provider.last_request.max_tokens == 700
+
+
+def test_openrouter_keeps_effective_max_tokens() -> None:
+    provider = StaticProvider(["OpenRouter reply"])
+    settings = Settings(
+        provider="openrouter",
+        openrouter_api_key="test-key",
+        max_tokens=900,
+        max_output_tokens=700,
+    )
+    engine = InterviewEngine(settings, provider=provider)
+    engine.chat(user_message="Hello", history=[])
+    assert provider.last_request is not None
+    assert provider.last_request.max_tokens == 700
+
+
 def test_unknown_model_does_not_send_reasoning() -> None:
     provider = StaticProvider([QUESTION_JSON])
     settings = Settings(
