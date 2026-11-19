@@ -159,6 +159,7 @@ model-quality claim is made.
 - `PROMPTS.md` — six techniques, defensive layer and JSON shapes.
 - `SECURITY.md` — threat model, controls, OWASP mapping and limits.
 - `EVALUATION.md` — prompt comparison method and offline result.
+- [`REVIEW_EXPLANATIONS.md`](../../REVIEW_EXPLANATIONS.md) — cited concept → app explanations for every substantive course-brief item (at vault root).
 - `DEMO.md` — a five-minute review script.
 - `DEPLOYMENT.md` — local setup, Streamlit Cloud runbook, GitHub remotes and submission.
 - `.streamlit/secrets.toml.example` — secret names for Streamlit Cloud, no values.
