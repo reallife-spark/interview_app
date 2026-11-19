@@ -32,7 +32,7 @@ QUESTION_SET_SCHEMA_HINT = """{
 }"""
 
 ANSWER_EVALUATION_SCHEMA_HINT = """{
-  "score": 0,
+  "score": 85,
   "summary": "string",
   "strengths": ["string"],
   "gaps": ["string"],
@@ -219,7 +219,11 @@ def answer_evaluation_messages(
         {_job_description_block(job_description)}
 
         Score the answer against the question and the role. Be specific and
-        constructive. Return only JSON matching this shape:
+        constructive. `score` must be an integer from 0 to 100 (0 = poor,
+        100 = excellent), not a string, a decimal, or a 0-10 / 1-5 scale.
+        `strengths`, `gaps` and `next_steps` are lists of short strings and may
+        be empty. Return one JSON object with exactly these keys,
+        no markdown fences and no extra prose:
         {ANSWER_EVALUATION_SCHEMA_HINT}
         """
     ).strip()

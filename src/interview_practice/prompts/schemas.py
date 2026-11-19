@@ -215,10 +215,33 @@ def validate_question_set(payload: Mapping[str, Any]) -> QuestionSet:
     return QuestionSet(role=role, questions=tuple(questions))
 
 
+def _coerce_score(value: Any, *, label: str, low: int, high: int) -> int:
+    """Read an integer score from a model-produced value.
+
+    Models write ``85``, ``85.0`` and ``"85"`` interchangeably. Accept those
+    three shapes; reject bools (``bool`` subclasses ``int`` in Python), decimals
+    and non-numeric strings rather than silently rounding a misunderstood scale.
+    """
+    if isinstance(value, bool):
+        raise SchemaError(f"{label} must be an integer")
+    if isinstance(value, int):
+        result = value
+    elif isinstance(value, float) and value.is_integer():
+        result = int(value)
+    elif isinstance(value, str):
+        text = value.strip()
+        if not (text.isdigit() or (text.startswith("-") and text[1:].isdigit())):
+            raise SchemaError(f"{label} must be an integer")
+        result = int(text)
+    else:
+        raise SchemaError(f"{label} must be an integer")
+    if not low <= result <= high:
+        raise SchemaError(f"{label} must be {low}-{high}")
+    return result
+
+
 def validate_answer_evaluation(payload: Mapping[str, Any]) -> AnswerEvaluation:
-    score = payload.get("score")
-    if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= 100:
-        raise SchemaError("score must be an integer between 0 and 100")
+    score = _coerce_score(payload.get("score"), label="score", low=0, high=100)
     return AnswerEvaluation(
         score=score,
         summary=_required_text(payload, "summary"),
@@ -317,19 +340,9 @@ def validate_interview_rubric(
 
 
 def _rubric_weight(value: object, index: int) -> int:
-    if isinstance(value, bool):
-        raise SchemaError(f"criterion {index} weight must be an integer")
-    if isinstance(value, int):
-        weight = value
-    elif isinstance(value, float) and value.is_integer():
-        weight = int(value)
-    elif isinstance(value, str) and value.strip().isdigit():
-        weight = int(value.strip())
-    else:
-        raise SchemaError(f"criterion {index} weight must be an integer")
-    if not 1 <= weight <= 100:
-        raise SchemaError(f"criterion {index} weight must be 1-100")
-    return weight
+    return _coerce_score(
+        value, label=f"criterion {index} weight", low=1, high=100
+    )
 
 
 def _required_text(payload: Mapping[str, Any], key: str) -> str:
@@ -341,8 +354,8 @@ def _required_text(payload: Mapping[str, Any], key: str) -> str:
 
 def _text_list(payload: Mapping[str, Any], key: str) -> tuple[str, ...]:
     value = payload.get(key)
-    if not isinstance(value, list) or not value:
-        raise SchemaError(f"{key} must be a non-empty list")
+    if not isinstance(value, list):
+        raise SchemaError(f"{key} must be a list")
     cleaned = tuple(
         item.strip() for item in value if isinstance(item, str) and item.strip()
     )

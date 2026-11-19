@@ -218,6 +218,74 @@ def test_validate_answer_evaluation_rejects_bad_score() -> None:
         validate_answer_evaluation(payload)
 
 
+def test_validate_answer_evaluation_accepts_integral_float_score() -> None:
+    payload = {
+        "score": 85.0,
+        "summary": "Solid.",
+        "strengths": ["clear"],
+        "gaps": ["no metric"],
+        "improved_answer": "Add a metric.",
+        "next_steps": ["write a metric"],
+    }
+    assert validate_answer_evaluation(payload).score == 85
+
+
+def test_validate_answer_evaluation_accepts_digit_string_score() -> None:
+    payload = {
+        "score": "85",
+        "summary": "Solid.",
+        "strengths": ["clear"],
+        "gaps": ["no metric"],
+        "improved_answer": "Add a metric.",
+        "next_steps": ["write a metric"],
+    }
+    assert validate_answer_evaluation(payload).score == 85
+
+
+def test_validate_answer_evaluation_rejects_bool_and_fractional_score() -> None:
+    base = {
+        "score": 82,
+        "summary": "Solid.",
+        "strengths": ["clear"],
+        "gaps": ["no metric"],
+        "improved_answer": "Add a metric.",
+        "next_steps": ["write a metric"],
+    }
+    for bad in (True, 85.5):
+        with pytest.raises(SchemaError, match="score"):
+            validate_answer_evaluation({**base, "score": bad})
+
+
+def test_validate_answer_evaluation_allows_empty_coaching_lists() -> None:
+    payload = {
+        "score": 100,
+        "summary": "Excellent.",
+        "strengths": [],
+        "gaps": [],
+        "improved_answer": "No change needed.",
+        "next_steps": [],
+    }
+    result = validate_answer_evaluation(payload)
+    assert result.strengths == ()
+    assert result.gaps == ()
+    assert result.next_steps == ()
+    with pytest.raises(SchemaError, match="strengths"):
+        validate_answer_evaluation({**payload, "strengths": "none"})
+
+
+def test_answer_evaluation_prompt_states_score_range() -> None:
+    messages = library.answer_evaluation(
+        "json_schema",
+        question="q",
+        answer="a",
+        job_description="",
+        canary="canary-123",
+    )
+    user = messages[-1].content
+    assert "integer from 0 to 100" in user
+    assert "no markdown fences" in user
+
+
 def test_domain_and_style_are_applied() -> None:
     prompt = library.system_prompt(
         "json_schema",
