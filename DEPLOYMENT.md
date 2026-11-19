@@ -1,6 +1,6 @@
 ---
 title: Deployment and submission — Interview Practice App
-updated: 2026-11-16
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - README.md
@@ -40,7 +40,8 @@ testing, or to Streamlit Cloud secrets for the public app. The public app is
 live at
 <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>. The first preflight
 render showed **Demo — no key**; the later public smoke loaded the OpenRouter
-secret and passed.
+secret and passed. That first render is historical: since 2026-11-19 Demo is a
+developer-only mode enabled with `PROVIDER=demo`, not the normal default.
 
 ## Local setup
 
@@ -72,8 +73,10 @@ Never commit `.env`. The `.gitignore` already excludes it.
 streamlit run app.py
 ```
 
-Open `http://localhost:8501`. Demo mode is selected when no key is present.
-OpenRouter mode requires the key and a course-allowed model.
+Open `http://localhost:8501`. OpenRouter mode is the normal path and requires
+the key and a course-allowed model. For the offline developer demo, run
+`PROVIDER=demo streamlit run app.py`; without a key or that flag the app reports
+the missing key.
 
 ## Pre-deployment checks
 
@@ -170,7 +173,8 @@ The private repo is the backup.
    <https://interviewap-nbsnftcgrwj7yjcm2h658m.streamlit.app/>.
 9. Open the public URL and verify:
    - the page loads without a server error;
-   - **Demo** provider works with no network;
+   - for a local developer run, **Demo** works with no network when
+     `PROVIDER=demo` is set; the public app does not show Demo;
    - **OpenRouter** provider works with the secret and can generate a question
      set;
    - one answer evaluation and one Coach message work;
@@ -273,12 +277,12 @@ cancellation does not refund it. The LMS page is authoritative.
 
 | Symptom | Check |
 |---|---|
-| `OPENROUTER_API_KEY is required` | Add the key to `.env` or Streamlit secrets |
+| `OPENROUTER_API_KEY is required` | Add the key to `.env` or Streamlit secrets; set `PROVIDER=demo` only for offline developer use |
 | `OpenRouter request failed (401)` | Key is invalid or lacks access |
 | `OpenRouter request failed (429)` | Rate limit; wait or lower call frequency |
 | Invalid JSON error | Switch to `JSON schema`; retry; do not trust malformed output |
 | Local mode fails | Tunnel at `http://127.0.0.1:21464/v1` is down; no fallback |
-| Streamlit Cloud cannot reach local mode | Expected; use OpenRouter or demo |
+| Streamlit Cloud cannot reach local mode | Expected; use OpenRouter, or `PROVIDER=demo` for offline developer use |
 | `git push` rejected | Fetch/rebase; do not force-push without confirmation |
 | Course repo has README | Merge or rebase; keep the course repo's history |
 

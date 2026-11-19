@@ -25,7 +25,7 @@ No key is in the repository.
 - A multi-turn chatbot with strict, neutral and friendly interviewer styles.
 - A deterministic prompt-comparison harness with an offline fixture run.
 - Structured interviewer rubrics with one schema-repair retry, an opt-in LLM judge, and an Excel red-team report.
-- Optional Chroma question memory on an OpenAI-compatible embedding adapter, LangChain runtime and OpenRouter image generation.
+- Optional Chroma question memory on an OpenAI-compatible embedding adapter and an optional LangChain runtime. The image-generation module is backend-only and is not exposed in the UI.
 - Budget-aware structured prompts and explicit output-cap errors instead of generic invalid-JSON failures.
 - Reasoning effort gated by model metadata, with a visible one-time fallback when a model rejects it.
 - A public `agx64` path through the authenticated `real-life.dev` VPS gateway.
@@ -34,9 +34,12 @@ No key is in the repository.
 
 | Mode | Network | Key | Use |
 |---|---|---|---|
-| **Demo** | None | None | Default; deterministic fixtures; review demo |
-| **OpenRouter** | Yes | `OPENROUTER_API_KEY` | Public app and live model calls |
+| **Demo** | None | None | Developer-only with `PROVIDER=demo`; deterministic fixtures |
+| **OpenRouter** | Yes | `OPENROUTER_API_KEY` | Normal/public path and live model calls |
 | **agx64** | Public HTTPS gateway | Gateway token | Local/open-source model path |
+
+Without `OPENROUTER_API_KEY` or explicit `PROVIDER=demo`, the app reports the
+missing key instead of silently running the demo fixtures.
 
 The local path uses the authenticated gateway `https://real-life.dev/v1`
 (`VPS.md`); the older SSH tunnel remains a developer option at
@@ -64,13 +67,14 @@ app.py
                  -> guardrails (secrets, injection, canary)
                  -> tailoring (job-description cap + hybrid RAG-lite)
                  -> retrieval (optional Chroma question memory)
-                 -> reports / imagegen / judge (optional artifacts)
+                 -> reports / judge (optional artifacts)
+                 -> imagegen (backend-only; no UI action)
                  -> session (call/cost caps, history, canary)
                  -> schemas (QuestionSet, AnswerEvaluation, Rubric, Judge)
 ```
 
 The engine is independent of Streamlit and is covered by unit tests. The UI is
-covered by `streamlit.testing.v1.AppTest` in demo mode.
+covered by `streamlit.testing.v1.AppTest` in the explicit developer demo mode.
 
 ## Project layout
 
@@ -88,7 +92,7 @@ src/interview_practice/
   evaluation.py      prompt comparison rubric and runners
   retrieval/         optional Chroma question memory
   reports.py         Excel red-team workbook
-  imagegen.py        opt-in OpenRouter image action
+  imagegen.py        backend-only image module; not exposed in the UI
   providers/         build_provider; base contract; _lib adapters; tests
   prompts/           PromptLibrary; public schemas/techniques; _lib; tests
   ui/                render_app; _lib layout; tests
@@ -174,8 +178,9 @@ model-quality claim is made.
 - The offline evaluation is a fixture, not a live model-quality result.
 - Chroma question memory is optional and uses provider-scoped collections.
 - LangChain is an optional runtime; native remains the default.
-- Image generation and the LLM judge are opt-in and mocked in tests; no live
-  image or judge quality claim is made.
+- The image-generation module and the LLM judge are mocked in tests; image
+  generation is not exposed in the UI, and no live image or judge quality claim
+  is made.
 - The guardrails are rule-based and can miss paraphrased attacks.
 - A public app needs its own OpenRouter key and spend cap; a shared key is not
   provided here.

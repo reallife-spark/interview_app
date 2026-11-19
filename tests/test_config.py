@@ -169,7 +169,7 @@ def test_settings_reject_invalid_caps() -> None:
         Settings(session_cost_cap_usd=-1).validate()
 
 
-def test_model_options_cover_demo_openrouter_and_local() -> None:
+def test_model_options_cover_openrouter_and_local_without_demo() -> None:
     from interview_practice.config import (
         apply_model_selection,
         model_options,
@@ -177,7 +177,8 @@ def test_model_options_cover_demo_openrouter_and_local() -> None:
     )
 
     options = model_options(["qwen3.6-35b-262k-q8"], configured_local_model="")
-    assert options[0].key == "demo"
+    assert all(option.key != "demo" for option in options)
+    assert options[0].provider == "openrouter"
     assert any(option.provider == "openrouter" for option in options)
     assert any(option.key == "local:qwen3.6-35b-262k-q8" for option in options)
     selected = next(option for option in options if option.provider == "local")
@@ -185,6 +186,14 @@ def test_model_options_cover_demo_openrouter_and_local() -> None:
     assert settings.provider == "local"
     assert settings.local_model == "qwen3.6-35b-262k-q8"
     assert selection_for_settings(settings) == "local:qwen3.6-35b-262k-q8"
+
+    demo_options = model_options(
+        ["qwen3.6-35b-262k-q8"],
+        configured_local_model="",
+        include_demo=True,
+    )
+    assert demo_options[0].key == "demo"
+    assert model_options(include_demo=True)[0].provider == "demo"
 
 
 def test_model_selection_is_explicit() -> None:

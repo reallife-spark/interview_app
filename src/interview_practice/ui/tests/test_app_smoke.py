@@ -20,6 +20,26 @@ def _demo_app(monkeypatch) -> AppTest:
     return at
 
 
+def _openrouter_app(monkeypatch) -> AppTest:
+    monkeypatch.setenv("PROVIDER", "openrouter")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "interview_practice.ui._lib.layout._ensure_catalog",
+        lambda *_: None,
+    )
+    at = AppTest.from_file(APP, default_timeout=30).run()
+    assert not at.exception
+    return at
+
+
+def test_image_controls_are_absent_in_openrouter_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ENABLE_IMAGE_GENERATION", "true")
+    at = _openrouter_app(monkeypatch)
+    assert not any(item.key == "image_generation" for item in at.toggle)
+    assert not any(item.key == "generate_image" for item in at.button)
+    assert not any(item.key == "image_prompt" for item in at.text_input)
+
+
 def test_app_renders_in_demo_mode(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     assert at.title[0].value == "Interview Practice Coach"
@@ -36,6 +56,13 @@ def test_model_selector_is_visible(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     selector = next(item for item in at.selectbox if item.key == "model_selection")
     assert any(value.startswith("Demo -") for value in selector.options)
+    assert any(value.startswith("OpenRouter -") for value in selector.options)
+
+
+def test_model_selector_excludes_demo_in_openrouter_mode(monkeypatch) -> None:
+    at = _openrouter_app(monkeypatch)
+    selector = next(item for item in at.selectbox if item.key == "model_selection")
+    assert not any(value.startswith("Demo -") for value in selector.options)
     assert any(value.startswith("OpenRouter -") for value in selector.options)
 
 

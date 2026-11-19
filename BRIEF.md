@@ -1,6 +1,6 @@
 ---
 title: Interview Practice App — brief
-updated: 2026-11-16
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - https://github.com/TuringCollegeSubmissions/rmobil-AE.1.5
@@ -60,8 +60,8 @@ three surfaces:
 - Job-description field with lightweight retrieval; no vector database.
 - Developer settings separated from the learner-facing experience.
 - Session-only history, visible cost estimate, export, and clear session.
-- Demo mode that works without a key; no silent fallback from local to
-  OpenRouter.
+- Developer demo mode that works without a key when `PROVIDER=demo` is set; no
+  silent fallback from local to OpenRouter.
 
 ## Bonus scope
 
@@ -74,8 +74,9 @@ original five-medium/one-hard target:
 - Job-description tailoring with hybrid RAG-lite.
 - Security guard with soft/strict modes and developer-setting separation.
 - Full multi-turn chatbot and interviewer personas.
-- Excel red-team report, opt-in image generation, optional LangChain, optional
-  Chroma question memory, and an opt-in LLM judge.
+- Excel red-team report, a retained backend image-generation module with no UI
+  action, optional LangChain, optional Chroma question memory, and an opt-in
+  LLM judge.
 - Public `agx64` path through the authenticated `real-life.dev` gateway.
 
 No live image, judge, embedding or model-quality claim is made from the mocked
@@ -121,7 +122,8 @@ applied around the selected technique.
 
 ## Definition of done
 
-- The app runs in demo mode with no key and in OpenRouter mode with a key.
+- The app runs in the developer demo mode with `PROVIDER=demo` and no key, and
+  in OpenRouter mode with a key.
 - The user can generate questions, practise an answer, get feedback, and chat.
 - Six prompt variants are selectable; the offline evaluation names a fixture
   winner and the live run is user-gated.

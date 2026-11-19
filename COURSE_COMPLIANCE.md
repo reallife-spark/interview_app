@@ -1,6 +1,6 @@
 ---
 title: Turing College Sprint 1 — compliance map
-updated: 2026-11-17
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 03_Sources/turing-college/sprint-1-course-status-2026-11-16.md
@@ -90,7 +90,7 @@ quality claims.
 | M5 Excel jailbreak report | `reports.py`; CLI; workbook download/test | Done |
 | M6 job-description RAG | `tailoring.py`; hybrid RAG-lite tests | Done |
 | M7 LLM chooser | unified Model selector; OpenRouter + `agx64` | Done |
-| M8 image generation | `imagegen.py`; opt-in OpenRouter action; mocked test | Done: mocked |
+| M8 image generation | `imagegen.py` and mocked test retained; UI action removed 2026-11-19 | Partial: backend only; not live-tested |
 | M9 security guard and developer separation | `guardrails.py`; Developer settings; tests | Done |
 | H1 full chatbot | Coach tab with history | Done |
 | H2 LangChain | optional `LangChainProvider`; native default | Done: mocked/native default |

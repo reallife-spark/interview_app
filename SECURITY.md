@@ -1,6 +1,6 @@
 ---
 title: Security — Interview Practice App
-updated: 2026-11-17
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 03_Sources/ai-engineering/web/web-simon-willison-prompt-injection.md
@@ -56,7 +56,7 @@ general-purpose proxy.
 | Gateway token | VPS nginx | Bearer check on `/v1/*`; no direct `11434` |
 | XLSX formula safety | `reports.py` | Formula-leading text is prefixed with an apostrophe |
 | Question memory | `retrieval/` | Stores only generated question text, provider-scoped; `.chroma` is instance-local and ephemeral on Streamlit Cloud |
-| Image/judge opt-in | `imagegen.py` / `engine.py` | Disabled by default; one image per action |
+| Image module / judge opt-in | `imagegen.py` / `engine.py` | Image module is backend-only with no UI action; judge is opt-in and default off |
 | No local fallback | `providers/__init__.py` | Local failure stays local; no private data leaves the host silently |
 | Key handling | `config.py` + `.env.example` | Keys are `repr=False`, never written to the page |
 | Red-team fixtures | `tests/fixtures/red_team.json` | Reproducible safe checks |

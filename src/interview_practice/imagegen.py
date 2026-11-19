@@ -1,8 +1,8 @@
-"""Opt-in OpenRouter image generation.
+"""Backend-only OpenRouter image generation.
 
-Image generation is intentionally not part of the demo or `agx64` paths. It
-costs money, is slower than text, and should never run unless the user asks for
-one image in an explicit action.
+The Streamlit UI no longer exposes an image action. This module is retained for
+future or external use; it makes a network call only when called directly. It
+is intentionally not part of the demo or `agx64` paths.
 """
 
 from __future__ import annotations

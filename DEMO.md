@@ -1,6 +1,6 @@
 ---
 title: Review demo — Interview Practice App
-updated: 2026-11-16
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - SECURITY.md
@@ -13,9 +13,10 @@ tags:
 
 # Five-minute review demo
 
-This script is for a reviewer. It uses **demo mode** by default so the demo
-works without a key. A live OpenRouter pass is optional. See `USER_MANUAL.md`
-for the full control reference and troubleshooting.
+This script is for a reviewer. It uses the developer-only **demo mode**; start
+with `PROVIDER=demo` so the demo works without a key. A live OpenRouter pass is
+optional. See `USER_MANUAL.md` for the full control reference and
+troubleshooting.
 
 ## Before the call
 
@@ -23,10 +24,12 @@ for the full control reference and troubleshooting.
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements-dev.txt
-streamlit run app.py
+PROVIDER=demo streamlit run app.py
 ```
 
-Open `http://localhost:8501`. In the sidebar, keep **Provider: Demo**.
+Alternatively, put `PROVIDER=demo` in the project `.env`. Open
+`http://localhost:8501`. The Model selector includes **Demo** because that flag
+is set; keep it selected.
 
 ## 1. Prepare (60 seconds)
 
@@ -109,12 +112,14 @@ Show the sidebar:
 - call cap and session cost cap;
 - cost of the last call.
 
-Explain that demo mode is $0 and offline, OpenRouter mode is the public path,
-and local mode is a developer path through the existing `agx64` tunnel.
+Explain that the developer demo mode is $0 and offline, OpenRouter mode is the
+public path, and local mode is a developer path through the existing `agx64`
+tunnel.
 
 ## Evidence and limits
 
-- The app was exercised in demo mode with `AppTest` on 2026-11-16.
+- The app was exercised in the explicit developer demo mode with `AppTest` on
+  2026-11-16.
 - Headless Streamlit started and returned HTTP 200 on this host.
 - The red-team fixture table passes.
 - No screenshot was captured in this terminal-only environment; this walkthrough
@@ -123,7 +128,7 @@ and local mode is a developer path through the existing `agx64` tunnel.
 
 ## If a call fails
 
-- Demo mode should not need a network.
+- The developer demo mode should not need a network.
 - OpenRouter mode needs `OPENROUTER_API_KEY`; the error is shown in the sidebar.
 - Local mode needs the tunnel at `http://127.0.0.1:21464/v1`; a local failure
   never falls back to OpenRouter.

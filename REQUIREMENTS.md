@@ -1,6 +1,6 @@
 ---
 title: Interview Practice App — requirements matrix
-updated: 2026-11-17
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 06_Projects/interview-practice-app/BRIEF.md
@@ -30,7 +30,7 @@ A requirement is `done` only after its check passes.
 | R9 | Job-description field | `tailoring.py`; `<JobDescription>` XML boundary | tailoring tests | done |
 | R10 | Session-only chat history | `session.py`; no persistence | clear/export tests | done |
 | R11 | Export and clear session | Markdown/JSON export; clear button | `AppTest` test | done |
-| R12 | Demo mode | deterministic fixtures; default when no key | provider test | done |
+| R12 | Demo mode | deterministic fixtures; developer-only with `PROVIDER=demo`; not in the normal Model selector | provider/AppTest test | done |
 | R13 | Local `agx64` mode | OpenAI-compatible provider; public gateway `https://real-life.dev/v1`; auto-detect `/v1/models` | mocked local test; public 401/200, Cloud discovery and completion on 2026-11-17 | done: gateway and Cloud secret verified |
 | R14 | No silent provider fallback | provider selected explicitly; local failure stays local | provider test | done |
 | R15 | Cost visibility | OpenRouter model metadata + token usage; per-call and session | cost tests | done |
@@ -90,7 +90,7 @@ live-model quality claim.
 | M5 | Excel jailbreak report | `reports.py`; `scripts/jailbreak_report.py`; workbook download/test | done |
 | M6 | Job-description tailoring (RAG) | `tailoring.py`; hybrid RAG-lite tests | done |
 | M7 | LLM chooser | unified Model selector; three OpenRouter + `agx64` models | done |
-| M8 | Image generation | `imagegen.py`; opt-in OpenRouter action; mocked image test | done: mocked; not live-tested |
+| M8 | Image generation | `imagegen.py` and mocked image test retained; UI action removed 2026-11-19 | partial: backend only; not live-tested |
 | M9 | Security guard + developer settings separation | `guardrails.py`; Developer settings expander; tests | done |
 | H1 | Full chatbot | Coach tab with session history | done |
 | H2 | LangChain chains | `providers/_lib/langchain.py`; `CHAIN_RUNTIME=langchain`; importorskip test | done: mocked/native default |
@@ -102,7 +102,7 @@ live-model quality claim.
 
 | ID | Requirement | Phase 16 disposition |
 |---|---|---|
-| X1 | Image generation | Implemented as opt-in M8; OpenRouter-only |
+| X1 | Image generation | Reverted from the UI; module and test retained unexposed |
 | X2 | Excel jailbreak report | Implemented as M5 with formula sanitisation |
 | X3 | LangChain | Implemented as optional H2; native remains default |
 | X4 | Vector database | Implemented as optional H3 Chroma question memory |

@@ -1,6 +1,6 @@
 ---
 title: Interview Practice Coach — user manual
-updated: 2026-11-16
+updated: 2026-11-19
 sources:
   - 03_Sources/turing-college/interview-practice-app-brief-2026-11-16.md
   - 06_Projects/interview-practice-app/README.md
@@ -39,7 +39,8 @@ replacement for a human mock interview. The score is a coaching heuristic.
 
 - Python 3.11 or newer.
 - `pip` and a terminal.
-- Optional: an OpenRouter API key for live model calls.
+- An OpenRouter API key for the normal/public mode; optional only for the
+  developer offline mode.
 
 ### Install
 
@@ -51,7 +52,7 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 ```
 
-Edit `.env` only if you want OpenRouter mode:
+Add the key for OpenRouter mode:
 
 ```text
 OPENROUTER_API_KEY=your-key-here
@@ -59,7 +60,7 @@ OPENROUTER_MODEL=openai/gpt-6-luna
 ```
 
 Never commit `.env`. It is gitignored. The app loads `.env` automatically.
-Demo mode works without a key.
+The developer-only Demo mode works without a key when `PROVIDER=demo` is set.
 
 ### Run
 
@@ -81,15 +82,18 @@ This runs tests, Ruff and the import-boundary gate.
 
 | Mode | Network | Key | What it does |
 |---|---|---|---|
-| **Demo** | None | None | Deterministic fixtures; no cost; best for a review |
-| **OpenRouter** | Yes | Required | Live model calls through OpenRouter |
+| **Demo** | None | None | Developer-only with `PROVIDER=demo`; deterministic fixtures; no cost |
+| **OpenRouter** | Yes | Required | Normal/public mode; live model calls through OpenRouter |
 | **agx64** | Public HTTPS gateway | Gateway token | Open-source model path through `real-life.dev/v1` |
 
 The mode is selected with the single **Model** selector under
-**Settings → Developer settings**. It lists Demo, the three OpenRouter course
-models and any discovered `agx64` models. Click **Discover agx64 models** to
-refresh the list from the configured gateway first; the selector then includes
-the `agx64` options.
+**Settings → Developer settings**. It lists the three OpenRouter course models
+and any discovered `agx64` models. Demo appears only when `PROVIDER=demo` is
+explicitly set. Click **Discover agx64 models** to refresh the list from the
+configured gateway first; the selector then includes the `agx64` options.
+
+Without an OpenRouter key or explicit `PROVIDER=demo`, the app reports the
+missing key instead of silently using the demo fixtures.
 
 There is **no silent fallback** from local mode to OpenRouter. If a local call
 fails, the app reports the failure; it does not send a private job description
@@ -97,7 +101,8 @@ to a remote provider.
 
 ## 5. First session
 
-1. Leave the provider on **Demo** if you do not have a key.
+1. Add `OPENROUTER_API_KEY` to `.env`, or start the app with `PROVIDER=demo`
+   for the offline developer mode.
 2. Enter a target role, such as `AI engineer`.
 3. Optionally paste a job description.
 4. Choose a difficulty and number of questions.
@@ -113,7 +118,6 @@ to a remote provider.
 |---|---|---|
 | Interview rubric | **Prepare → Generate interview rubric** | One model call |
 | Excel red-team report | Developer settings → **Build jailbreak report**, or `python scripts/jailbreak_report.py --demo` | No network; formula cells sanitised |
-| Image generation | Enable in Developer settings; OpenRouter only; enter a prompt and click once | Extra cost; hidden for Demo/`agx64` |
 | Question memory | Enable Chroma; generated questions only | Local `.chroma`; provider-scoped; instance-local on Streamlit Cloud |
 | LangChain runtime | Select `langchain`; OpenRouter only | Optional dependency; native default |
 | LLM judge | Enable; then **Run LLM judge** after an evaluation | Extra cost; default off |
@@ -127,8 +131,9 @@ embeddings; it is not a general proxy.
 
 ### Sidebar
 
-- **Model** — one selector for Demo, the three OpenRouter course models and
-  discovered `agx64` models. Choosing `agx64` never falls back to OpenRouter.
+- **Model** — one selector for the three OpenRouter course models and discovered
+  `agx64` models. Demo appears only with `PROVIDER=demo`. Choosing `agx64` never
+  falls back to OpenRouter.
 - **Discover agx64 models** — lazy refresh of the local model list from the
   configured gateway.
 - **Prompt technique** — the six prompt variants.
@@ -138,7 +143,6 @@ embeddings; it is not a general proxy.
 - **Lexical RAG-lite** — select relevant job-description chunks.
 - **Refresh OpenRouter prices** — fetch current model metadata and prices.
 - **Clear session** — reset questions, feedback, chat, budget and canary.
-- **Image generation** — opt-in OpenRouter-only action; one image per click.
 - **Generate interview rubric** — structured criteria and weights in Prepare.
 
 ### Prepare tab
@@ -175,7 +179,7 @@ Chat history is not saved to disk.
 
 | Setting | Default | What it changes | Practical guidance |
 |---|---|---|---|
-| Model | Demo | Provider and model in one choice | Demo for a keyless review; OpenRouter for live calls; `agx64` for the local path |
+| Model | OpenRouter `openai/gpt-6-luna` | Provider and model in one choice | OpenRouter for live calls; `agx64` for the local path; Demo only with `PROVIDER=demo` |
 | OpenRouter model | `openai/gpt-6-luna` | Model quality, speed and price | Start with the recommended default |
 | Discover agx64 models | n/a | Refreshes the local model list | Run once after the gateway is up |
 | Prompt technique | JSON schema | How the prompt is structured | JSON schema for reliable parsing; other techniques for comparison |
@@ -233,7 +237,7 @@ asks for JSON and the parser handles the reply.
   OpenRouter mode is selected. Use **Refresh OpenRouter prices** to retry.
 - Model metadata shows context length and whether JSON mode/reasoning are
   supported.
-- Demo mode is $0.
+- The developer demo mode is $0.
 - Local mode has no model charge, but your local hardware does the work.
 - Session caps are application limits, not a billing guarantee.
 
@@ -253,7 +257,7 @@ is blocked, try again in soft mode or clear the session.
 
 ## 12. Privacy and data
 
-- Demo mode makes no network calls.
+- The developer demo mode makes no network calls.
 - OpenRouter mode sends the prompt and job description to OpenRouter.
 - Local mode sends them to the local endpoint.
 - Chat history is in memory only.
@@ -278,14 +282,14 @@ is blocked, try again in soft mode or clear the session.
 | `agx64` fails | Check the public gateway and `LOCAL_BASE_URL`; the older SSH tunnel is `http://127.0.0.1:21464/v1` |
 | Cloud cannot reach `agx64` | Check `LOCAL_BASE_URL` and `LOCAL_API_KEY` in Streamlit secrets; gateways return 401/200 |
 | Local thinking model returns empty content | The reasoning used the output cap; use a non-thinking model such as `gemma4-2b-131k:latest`, or raise **Max output tokens** |
-| Session cap reached | Clear the session or switch to Demo |
+| Session cap reached | Clear the session, or start with `PROVIDER=demo` for offline use |
 | Clear session does not reset | Refresh the browser; session state is in memory |
 
 ## 14. Reviewer demo
 
 Use `DEMO.md` for the five-minute script. The short version:
 
-1. Demo mode, generate a question set.
+1. Start with `PROVIDER=demo`, then generate a question set.
 2. Switch prompt technique and compare.
 3. Practice an answer and show the structured feedback.
 4. Try an off-topic question; expect a polite redirect.
@@ -299,6 +303,8 @@ Use `DEMO.md` for the five-minute script. The short version:
 - The evaluation score is a coaching heuristic.
 - Rule-based guardrails can miss paraphrased attacks.
 - The RAG-lite path is hybrid and in-memory; it is not a vector database.
+- The image-generation module is retained in the repository for future or
+  external use; it is not exposed in the UI and is not part of the normal flow.
 - Local mode is a developer path, not a public deployment.
 - No live evaluation or deployment is claimed from the development host.
 

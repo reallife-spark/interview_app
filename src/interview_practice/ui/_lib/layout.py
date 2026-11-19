@@ -7,6 +7,7 @@ safety and budget behaviour can be tested without a browser.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -28,7 +29,6 @@ from interview_practice.engine import (
     QuestionGenerationResult,
     RubricResult,
 )
-from interview_practice.imagegen import ImageGenerationError, generate_image
 from interview_practice.prompts import (
     DEFAULT_DOMAIN,
     DEFAULT_PERSONA,
@@ -132,11 +132,14 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
     options = model_options(
         local_models,
         configured_local_model=base.local_model,
+        include_demo=(os.getenv("PROVIDER", "").strip().lower() == "demo"),
     )
     by_key = {option.key: option for option in options}
     current_key = selection_for_settings(base)
     if current_key not in by_key:
-        current_key = "demo"
+        current_key = options[0].key
+    if st.session_state.get("model_selection") not in by_key:
+        st.session_state.pop("model_selection", None)
 
     with st.sidebar.expander("Developer settings", expanded=True):
         selected_key = st.selectbox(
@@ -169,8 +172,9 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
         if selection.provider == "openrouter":
             if not base.openrouter_api_key:
                 st.warning(
-                    "No OPENROUTER_API_KEY is set. Use Demo, or add the key to "
-                    "Streamlit secrets / your local `.env`."
+                    "No OPENROUTER_API_KEY is set. Add the key to Streamlit "
+                    "secrets / your local `.env`, or set `PROVIDER=demo` for the "
+                    "offline developer mode."
                 )
             reasoning_choice = st.selectbox(
                 "Reasoning effort",
@@ -278,13 +282,6 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             help="Check generated questions for near-duplicates using a vector store.",
             key="question_memory",
         )
-        image_generation = st.toggle(
-            "Image generation (OpenRouter only)",
-            value=bool(base.enable_image_generation)
-            and selection.provider == "openrouter",
-            disabled=selection.provider != "openrouter",
-            key="image_generation",
-        )
         llm_judge = st.toggle(
             "LLM judge",
             value=base.enable_llm_judge,
@@ -334,7 +331,6 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
             "chat_warnings",
             "rubric_result",
             "judge_result",
-            "image_result",
             "report_bytes",
         ):
             st.session_state.pop(key, None)
@@ -349,7 +345,6 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
         strict_safety=strict_safety,
         enable_lexical_rag=lexical_rag,
         enable_question_memory=question_memory,
-        enable_image_generation=image_generation,
         enable_llm_judge=llm_judge,
         chain_runtime=chain_runtime,
         domain_profile=domain,
@@ -498,28 +493,6 @@ def _prepare_tab(engine: InterviewEngine, technique: str) -> None:
             )
         with st.expander("Raw InterviewRubric JSON"):
             st.json(rubric_result.rubric.to_dict())
-
-    if (
-        engine.settings.enable_image_generation
-        and engine.settings.provider == "openrouter"
-    ):
-        st.divider()
-        st.markdown("**Interview illustration (optional)**")
-        image_prompt = st.text_input(
-            "Image prompt",
-            key="image_prompt",
-            placeholder="A calm desk with notes and a laptop",
-        )
-        if st.button("Generate one image", key="generate_image"):
-            try:
-                image = generate_image(engine.settings, image_prompt)
-            except ImageGenerationError as exc:
-                st.error(str(exc))
-            else:
-                st.session_state["image_result"] = image
-        image = st.session_state.get("image_result")
-        if image is not None:
-            st.image(image.data, caption=f"{image.model} · opt-in image call")
 
     result = st.session_state.get("q_result")
     if not isinstance(result, QuestionGenerationResult):

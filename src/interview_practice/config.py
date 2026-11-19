@@ -144,17 +144,24 @@ def model_options(
     local_models: Sequence[str] = (),
     *,
     configured_local_model: str = "",
+    include_demo: bool = False,
 ) -> tuple[ModelSelection, ...]:
-    """Build one deterministic selector from demo, OpenRouter and agx64."""
+    """Build one deterministic selector from OpenRouter and agx64.
 
-    options: list[ModelSelection] = [
-        ModelSelection(
-            key="demo",
-            label="Demo - deterministic, no network",
-            provider="demo",
-            model="demo/interview-coach",
+    Demo is a developer-only option and is included only when ``include_demo``
+    is true (``PROVIDER=demo`` in the Streamlit UI).
+    """
+
+    options: list[ModelSelection] = []
+    if include_demo:
+        options.append(
+            ModelSelection(
+                key="demo",
+                label="Demo - deterministic, no network",
+                provider="demo",
+                model="demo/interview-coach",
+            )
         )
-    ]
     for model in COURSE_MODELS:
         options.append(
             ModelSelection(

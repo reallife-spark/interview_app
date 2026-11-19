@@ -1,6 +1,6 @@
 ---
 title: interview_practice — module boundaries
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # `interview_practice` module boundaries
@@ -22,7 +22,7 @@ interview_practice/
   session.py               public root module: SessionState
   evaluation.py            public root module: evaluation runners
   reports.py               public root module: XLSX report builder
-  imagegen.py              public root module: opt-in image action
+  imagegen.py              backend-only image module; no UI action
   messages.py              public root module: ChatMessage
   providers/
     __init__.py            entry point: build_provider + public types
