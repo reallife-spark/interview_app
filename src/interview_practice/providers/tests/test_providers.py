@@ -21,11 +21,15 @@ class FakeResponse:
 
 
 class FakeSession:
-    def __init__(self, *, get_response=None, post_response=None):
+    def __init__(self, *, get_response=None, post_response=None, post_responses=None):
         self.get_response = get_response
         self.post_response = post_response
+        self.post_responses = (
+            list(post_responses) if post_responses is not None else None
+        )
         self.last_get = None
         self.last_post = None
+        self.post_calls = []
 
     def get(self, url, **kwargs):
         self.last_get = (url, kwargs)
@@ -35,6 +39,10 @@ class FakeSession:
 
     def post(self, url, **kwargs):
         self.last_post = (url, kwargs)
+        self.post_calls.append((url, kwargs))
+        if self.post_responses is not None:
+            index = min(len(self.post_calls) - 1, len(self.post_responses) - 1)
+            return self.post_responses[index]
         if self.post_response is None:
             raise AssertionError("unexpected POST")
         return self.post_response
@@ -119,6 +127,88 @@ def test_openrouter_http_error_is_safe() -> None:
     )
     with pytest.raises(ProviderError, match="429"):
         provider.complete(_request())
+
+
+def test_openrouter_error_body_is_safe() -> None:
+    provider = build_provider(
+        _openrouter_settings(),
+        session=FakeSession(
+            post_response=FakeResponse(
+                {
+                    "error": {
+                        "message": "reasoning is not supported for this model"
+                    }
+                },
+                status_code=400,
+            )
+        ),
+    )
+    with pytest.raises(ProviderError) as exc:
+        provider.complete(_request())
+    message = str(exc.value)
+    assert "reasoning is not supported" in message
+    assert "test-key" not in message
+
+
+def test_openrouter_retries_without_reasoning_on_reasoning_error() -> None:
+    success = FakeResponse(
+        {
+            "model": "openai/gpt-6-luna",
+            "choices": [
+                {"message": {"content": "Hello"}, "finish_reason": "stop"}
+            ],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 1},
+        }
+    )
+    unsupported = FakeResponse(
+        {
+            "error": {
+                "message": "reasoning effort high is not supported for this model"
+            }
+        },
+        status_code=400,
+    )
+    session = FakeSession(post_responses=[unsupported, success])
+    provider = build_provider(_openrouter_settings(), session=session)
+    completion = provider.complete(_request(reasoning_effort="high"))
+    assert completion.text == "Hello"
+    assert "without reasoning" in completion.notice
+    assert len(session.post_calls) == 2
+    assert "reasoning" not in session.post_calls[1][1]["json"]
+    assert session.post_calls[0][1]["timeout"] == 120.0
+
+
+def test_openrouter_reports_reasoning_only_empty_content() -> None:
+    provider = build_provider(
+        _openrouter_settings(),
+        session=FakeSession(
+            post_response=FakeResponse(
+                {
+                    "model": "openai/gpt-6-luna",
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "reasoning": "private reasoning must not be exposed",
+                            },
+                            "finish_reason": "length",
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 323,
+                        "completion_tokens": 1200,
+                    },
+                }
+            )
+        ),
+    )
+    with pytest.raises(ProviderError) as exc:
+        provider.complete(_request(reasoning_effort="high"))
+    message = str(exc.value)
+    assert "finish_reason=length" in message
+    assert "completion_tokens=1200" in message
+    assert "non-reasoning" in message
+    assert "private reasoning" not in message
 
 
 def test_openrouter_lists_models() -> None:

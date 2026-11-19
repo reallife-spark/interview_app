@@ -88,6 +88,28 @@ class OpenRouterProvider:
         if request.response_format:
             payload["response_format"] = request.response_format
 
+        timeout = self._timeout
+        retries = 2
+        if request.reasoning_effort in {"medium", "high"}:
+            timeout = max(self._timeout, 120.0)
+            retries = 0 if request.reasoning_effort == "high" else 2
+        return self._complete_once(
+            request,
+            payload,
+            timeout=timeout,
+            retries=retries,
+        )
+
+    def _complete_once(
+        self,
+        request: CompletionRequest,
+        payload: dict[str, Any],
+        *,
+        timeout: float,
+        retries: int,
+        notice: str = "",
+        allow_reasoning_fallback: bool = True,
+    ) -> Completion:
         started = time.monotonic()
         try:
             response = request_with_retries(
@@ -96,15 +118,41 @@ class OpenRouterProvider:
                 f"{self._base_url}/chat/completions",
                 headers=self._headers(),
                 json=payload,
-                timeout=self._timeout,
+                timeout=timeout,
+                retries=retries,
             )
+        except requests.Timeout as exc:
+            raise ProviderError(
+                f"OpenRouter timed out after {timeout:.0f}s"
+            ) from exc
         except requests.RequestException as exc:
             raise ProviderError("Could not reach OpenRouter") from exc
         latency_ms = int((time.monotonic() - started) * 1000)
 
         if response.status_code >= 400:
+            message = _safe_error_message(response)
+            if (
+                allow_reasoning_fallback
+                and request.reasoning_effort
+                and response.status_code in {400, 422}
+                and _is_reasoning_error(message)
+            ):
+                fallback = dict(payload)
+                fallback.pop("reasoning", None)
+                return self._complete_once(
+                    request,
+                    fallback,
+                    timeout=self._timeout,
+                    retries=1,
+                    notice=(
+                        "The model did not support the selected reasoning "
+                        "effort; the request was retried without reasoning."
+                    ),
+                    allow_reasoning_fallback=False,
+                )
+            suffix = f": {message}" if message else ""
             raise ProviderError(
-                f"OpenRouter request failed ({response.status_code})"
+                f"OpenRouter request failed ({response.status_code}){suffix}"
             )
         try:
             data = response.json()
@@ -127,7 +175,25 @@ class OpenRouterProvider:
         else:
             text = ""
         if not text.strip():
-            raise ProviderError("OpenRouter returned an empty response")
+            finish_reason = str(choices[0].get("finish_reason") or "unknown")
+            usage = data.get("usage") or {}
+            completion_tokens = _int_or_zero(usage.get("completion_tokens"))
+            reasoning_present = bool(
+                message.get("reasoning") or message.get("reasoning_content")
+            )
+            hint = (
+                " The model used the output budget on reasoning; raise Max "
+                "output tokens or choose a non-reasoning or medium-reasoning "
+                "model."
+                if reasoning_present
+                else " The model returned no visible content."
+            )
+            raise ProviderError(
+                "OpenRouter returned empty content "
+                f"(finish_reason={finish_reason}, "
+                f"completion_tokens={completion_tokens})."
+                + hint
+            )
 
         usage = data.get("usage") or {}
         prompt_tokens = _int_or_zero(usage.get("prompt_tokens"))
@@ -148,7 +214,29 @@ class OpenRouterProvider:
             total_tokens=total_tokens,
             cost_usd=cost_usd,
             finish_reason=str(choices[0].get("finish_reason") or ""),
+            notice=notice,
         )
+
+
+def _safe_error_message(response: Any) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        return ""
+    message = error.get("message")
+    if not isinstance(message, str):
+        return ""
+    return " ".join(message.split())[:200]
+
+
+def _is_reasoning_error(message: str) -> bool:
+    lowered = message.lower()
+    return "reason" in lowered or "effort" in lowered
 
 
 def _int_or_zero(value: object) -> int:

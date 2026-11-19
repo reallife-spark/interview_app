@@ -55,7 +55,7 @@ general-purpose proxy.
 | Prompt integrity | `prompts/integrity.py` | Runtime check for required defensive markers |
 | Gateway token | VPS nginx | Bearer check on `/v1/*`; no direct `11434` |
 | XLSX formula safety | `reports.py` | Formula-leading text is prefixed with an apostrophe |
-| Question memory | `retrieval/` | Stores only generated question text, provider-scoped |
+| Question memory | `retrieval/` | Stores only generated question text, provider-scoped; `.chroma` is instance-local and ephemeral on Streamlit Cloud |
 | Image/judge opt-in | `imagegen.py` / `engine.py` | Disabled by default; one image per action |
 | No local fallback | `providers/__init__.py` | Local failure stays local; no private data leaves the host silently |
 | Key handling | `config.py` + `.env.example` | Keys are `repr=False`, never written to the page |
@@ -83,6 +83,17 @@ exact token:
 
 A canary leak is evidence that the model ignored a defensive instruction, not
 proof of a broader compromise. Rotate the token by clearing the session.
+
+Only the exact session token is treated as a canary signal. A benign use of the
+word "canary" in model output is not flagged, and the exact-canary check is
+case-insensitive. The other rule-based output warnings are retained; a safe
+refusal that mentions "system prompt" or "instructions" may still show a
+warning.
+
+Reasoning effort is sent only when the fetched model metadata advertises
+`reasoning`. A reasoning-specific 400/422 is retried once without reasoning and
+surfaced as a visible warning; other provider errors are shown with a safe
+status and message, never the key or headers.
 
 ## Secret handling
 

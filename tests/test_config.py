@@ -1,3 +1,5 @@
+import pytest
+
 from interview_practice.config import (
     COURSE_MODELS,
     DEFAULT_MODEL,
@@ -9,6 +11,7 @@ ENV_NAMES = (
     "PROVIDER",
     "OPENROUTER_API_KEY",
     "OPENROUTER_MODEL",
+    "OPENROUTER_TIMEOUT_SECONDS",
     "TEMPERATURE",
     "MAX_OUTPUT_TOKENS",
     "TOP_P",
@@ -21,6 +24,7 @@ ENV_NAMES = (
     "LOCAL_BASE_URL",
     "LOCAL_API_KEY",
     "LOCAL_MODEL",
+    "QUESTION_MEMORY_DUPLICATE_DISTANCE",
 )
 
 
@@ -34,7 +38,35 @@ def test_defaults_to_demo_without_key(monkeypatch) -> None:
     settings = Settings.from_env(load_env_file=False)
     assert settings.provider == "demo"
     assert settings.model == DEFAULT_MODEL
+    assert settings.question_memory_duplicate_distance == 0.15
     settings.validate()
+
+
+def test_question_memory_distance_is_coerced_and_validated() -> None:
+    base = Settings(provider="demo")
+    settings = apply_secret_values(
+        base,
+        {"QUESTION_MEMORY_DUPLICATE_DISTANCE": "0.2"},
+    )
+    assert settings.question_memory_duplicate_distance == 0.2
+    with pytest.raises(ValueError, match="duplicate_distance"):
+        Settings(question_memory_duplicate_distance=2.5).validate()
+
+
+def test_openrouter_timeout_is_coerced_and_validated() -> None:
+    assert Settings().openrouter_timeout_seconds == 60.0
+    settings = apply_secret_values(
+        Settings(provider="demo"),
+        {"OPENROUTER_TIMEOUT_SECONDS": "120"},
+    )
+    assert settings.openrouter_timeout_seconds == 120.0
+    with pytest.raises(ValueError, match="timeout"):
+        Settings(
+            provider="openrouter",
+            openrouter_api_key="test-key",
+            model=DEFAULT_MODEL,
+            openrouter_timeout_seconds=0,
+        ).validate()
 
 
 def test_key_selects_openrouter(monkeypatch) -> None:

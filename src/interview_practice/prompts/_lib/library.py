@@ -19,6 +19,7 @@ from interview_practice.prompts._lib.personas import (
 )
 from interview_practice.prompts._lib.templates import (
     answer_evaluation_messages,
+    budget_messages,
     build_system_prompt,
     chain_stage_one_messages,
     chat_messages,
@@ -77,6 +78,13 @@ class PromptLibrary:
         style: str = DEFAULT_STYLE,
     ) -> str:
         return build_system_prompt(technique, canary, domain=domain, style=style)
+
+    def with_budget(
+        self,
+        messages: list[ChatMessage],
+        max_tokens: int,
+    ) -> list[ChatMessage]:
+        return budget_messages(messages, max_tokens)
 
     def question_set(
         self,

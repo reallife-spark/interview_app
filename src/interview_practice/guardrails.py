@@ -199,13 +199,27 @@ class GuardrailPipeline:
             )
         warnings: list[str] = []
         rules: list[str] = []
-        canary_leaked = bool(canary and canary in text)
+        canary_leaked = bool(
+            canary and re.search(re.escape(canary), text, flags=re.IGNORECASE)
+        )
         safe_text = text
         if canary_leaked:
-            safe_text = text.replace(canary, "[REDACTED:CANARY]")
+            safe_text = re.sub(
+                re.escape(canary),
+                "[REDACTED:CANARY]",
+                text,
+                flags=re.IGNORECASE,
+            )
             warnings.append("canary leaked in output")
             rules.append("canary_leak")
-        detected = self._detector.detect_all(text)
+        # Output is data, but the other input-intent rules are retained by owner
+        # choice. Only the bare canary probe is excluded: a benign mention of
+        # "canary" is not an attack, and an exact leak is handled above.
+        detected = tuple(
+            rule
+            for rule in self._detector.detect_all(text)
+            if rule != "canary_probe"
+        )
         if detected:
             warnings.append(f"possible injection pattern in output: {detected[0]}")
             rules.extend(detected)

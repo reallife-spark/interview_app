@@ -1,7 +1,7 @@
 # Prompt evaluation
 
 - Mode: **demo**
-- Date: **2026-11-17**
+- Date: **2026-11-19**
 - Model: **scripted/interview-fixture (offline fixture)**
 - Cases: **3** per technique
 - Techniques: **6**

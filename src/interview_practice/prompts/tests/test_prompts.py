@@ -319,3 +319,150 @@ def test_rubric_rejects_bad_weight_total() -> None:
     }
     with pytest.raises(SchemaError, match="total 100"):
         validate_interview_rubric(payload)
+
+
+def test_rubric_prompt_lists_allowed_keys_and_complete_example() -> None:
+    messages = library.rubric(
+        role="AI engineer",
+        job_description="RAG and evaluation",
+        canary="canary-123",
+    )
+    user = messages[1].content
+    system = messages[0].content
+    assert "4 to 6 criteria" in user
+    for key in (
+        "technical_depth",
+        "problem_solving",
+        "communication",
+        "role_fit",
+        "collaboration",
+        "ownership",
+    ):
+        assert key in user
+    assert "total exactly 100" in user
+    assert '"weight": 30' in user
+    assert "schema compliance" in system
+    assert "no markdown fences" in system
+
+
+def test_validate_interview_rubric_fills_missing_role() -> None:
+    payload = {
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 30,
+                "descriptors": ["specific systems", "trade-offs"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 25,
+                "descriptors": ["diagnosis", "alternatives"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 25,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["motivation", "examples"],
+            },
+        ]
+    }
+    rubric = validate_interview_rubric(payload, default_role="AI engineer")
+    assert rubric.role == "AI engineer"
+
+
+def test_validate_interview_rubric_accepts_integral_weight_shapes() -> None:
+    payload = {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": "30",
+                "descriptors": ["specific systems", "trade-offs"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 25.0,
+                "descriptors": ["diagnosis", "alternatives"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 25,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["motivation", "examples"],
+            },
+        ],
+    }
+    rubric = validate_interview_rubric(payload)
+    assert sum(item.weight for item in rubric.criteria) == 100
+
+
+def test_validate_interview_rubric_rejects_fractional_weight() -> None:
+    payload = {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 30.5,
+                "descriptors": ["specific systems", "trade-offs"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 25,
+                "descriptors": ["diagnosis", "alternatives"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 25,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 19.5,
+                "descriptors": ["motivation", "examples"],
+            },
+        ],
+    }
+    with pytest.raises(SchemaError, match="weight"):
+        validate_interview_rubric(payload)
+
+
+def test_parse_json_object_ignores_trailing_prose() -> None:
+    payload = {"role": "AI engineer", "criteria": []}
+    text = "Here is the JSON: " + json.dumps(payload) + ". Done: {not json}"
+    assert parse_json_object(text) == payload
+
+
+def test_prompt_budget_appends_to_last_user_message() -> None:
+    messages = library.question_set(
+        "json_schema",
+        role="AI engineer",
+        job_description="RAG",
+        difficulty="medium",
+        count=3,
+        canary="canary-123",
+    )
+    budgeted = library.with_budget(messages, 300)
+    assert budgeted[0] == messages[0]
+    assert "300 completion tokens" in budgeted[-1].content
+    assert "at most two answer points" in budgeted[-1].content
+    assert budgeted[-1].role == "user"

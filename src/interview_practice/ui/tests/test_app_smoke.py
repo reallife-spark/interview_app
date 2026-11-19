@@ -85,6 +85,14 @@ def test_generate_questions_in_demo_mode(monkeypatch) -> None:
     assert "q1" in result.question_set.questions[0].id
 
 
+def test_hard_output_cap_warns_when_low(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    slider = next(item for item in at.slider if item.key == "max_tokens")
+    assert slider.label == "Hard output cap"
+    slider.set_value(100).run()
+    assert any("may truncate" in warning.value for warning in at.warning)
+
+
 def test_clear_session_resets_demo_state(monkeypatch) -> None:
     at = _demo_app(monkeypatch)
     _button(at, "generate").click().run()
@@ -98,6 +106,22 @@ def _text_area(at: AppTest, key: str):
         if area.key == key:
             return area
     raise AssertionError(f"text area not found: {key}")
+
+
+def test_practice_shows_full_question_and_short_selector(monkeypatch) -> None:
+    at = _demo_app(monkeypatch)
+    _button(at, "generate").click().run()
+    question = at.session_state["q_result"].question_set.questions[0]
+    selector = next(
+        item for item in at.selectbox if item.key == "practice_question"
+    )
+    assert [option.split(" · ")[0] for option in selector.options] == [
+        "q1",
+        "q2",
+        "q3",
+    ]
+    assert all(" · " in option for option in selector.options)
+    assert any(question.question in markdown.value for markdown in at.markdown)
 
 
 def test_practice_evaluation_in_demo_mode(monkeypatch) -> None:

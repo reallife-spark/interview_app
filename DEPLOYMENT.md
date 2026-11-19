@@ -159,6 +159,7 @@ The private repo is the backup.
    ```toml
    OPENROUTER_API_KEY = "your-key-here"
    OPENROUTER_MODEL = "openai/gpt-6-luna"
+   OPENROUTER_TIMEOUT_SECONDS = 60
    MAX_OUTPUT_TOKENS = 1200
    MAX_CALLS = 20
    SESSION_COST_CAP_USD = 0.50

@@ -162,9 +162,41 @@ safety event, not a normal answer. See `SECURITY.md`.
 }
 ```
 
-The parser accepts a fenced JSON block but rejects arrays, invalid JSON and
-missing keys. A parse failure is shown to the user as a recoverable error; the
-app does not invent a result.
+### InterviewRubric
+
+```json
+{
+  "role": "string",
+  "criteria": [
+    {
+      "key": "technical_depth",
+      "label": "string",
+      "weight": 30,
+      "descriptors": ["string", "string"]
+    }
+  ]
+}
+```
+
+The rubric prompt uses the JSON-schema system layer, names the six allowed keys
+(`technical_depth`, `problem_solving`, `communication`, `role_fit`,
+`collaboration`, `ownership`), requires integer weights totaling exactly 100,
+and asks the model to repeat the role. A missing role is filled from the
+request, and integral floats or digit strings are accepted as weights.
+
+The parser accepts a fenced JSON block, a short preamble and trailing prose, but
+rejects arrays, invalid JSON and missing keys. If the first rubric object fails
+validation, the app makes one repair call with the validation reason; a second
+failure shows a specific error. A response truncated by the output cap is not
+retried as a schema error.
+
+Structured prompts also carry a budget note: the model is told the hard output
+cap and asked to keep the whole object concise. If a response is cut off at the
+cap, the app raises a specific truncation error instead of reporting invalid
+JSON.
+
+A parse failure is shown to the user as a recoverable error; the app does not
+invent a result.
 
 ## Comparing techniques
 

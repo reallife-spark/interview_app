@@ -7,6 +7,7 @@ from interview_practice.cost import ModelCatalog, ModelInfo
 from interview_practice.engine import EngineError, InterviewEngine
 from interview_practice.messages import ChatMessage
 from interview_practice.providers.base import Completion, CompletionRequest
+from interview_practice.retrieval import MemoryUnavailable
 
 QUESTION_JSON = json.dumps(
     {
@@ -38,8 +39,15 @@ EVALUATION_JSON = json.dumps(
 class StaticProvider:
     name = "fake"
 
-    def __init__(self, replies: list[str]) -> None:
+    def __init__(
+        self,
+        replies: list[str],
+        finish_reasons: list[str] | None = None,
+        notices: list[str] | None = None,
+    ) -> None:
         self.replies = replies
+        self.finish_reasons = finish_reasons or [""] * len(replies)
+        self.notices = notices or [""] * len(replies)
         self.calls = 0
         self.last_messages: list[ChatMessage] = []
         self.last_request: CompletionRequest | None = None
@@ -50,7 +58,10 @@ class StaticProvider:
     def complete(self, request: CompletionRequest) -> Completion:
         self.last_request = request
         self.last_messages = list(request.messages)
-        text = self.replies[min(self.calls, len(self.replies) - 1)]
+        index = min(self.calls, len(self.replies) - 1)
+        text = self.replies[index]
+        finish_reason = self.finish_reasons[min(index, len(self.finish_reasons) - 1)]
+        notice = self.notices[min(index, len(self.notices) - 1)]
         self.calls += 1
         return Completion(
             text=text,
@@ -61,6 +72,8 @@ class StaticProvider:
             completion_tokens=5,
             total_tokens=15,
             cost_usd=None,
+            finish_reason=finish_reason,
+            notice=notice,
         )
 
 
@@ -86,6 +99,84 @@ def test_generate_questions_returns_schema_and_records_call() -> None:
     assert provider.calls == 1
     assert engine.session.calls == 1
     assert "questions" in provider.last_messages[1].content
+
+
+def test_generate_questions_prompt_contains_budget() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    engine = make_engine(provider)
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert "completion tokens" in provider.last_messages[-1].content
+    assert "1200" in provider.last_messages[-1].content
+
+
+def test_generate_questions_reports_output_cap() -> None:
+    provider = StaticProvider(
+        ['{"role": "AI engineer", "questions": ['],
+        finish_reasons=["length"],
+    )
+    engine = make_engine(provider)
+    with pytest.raises(EngineError, match="truncated"):
+        engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.calls == 1
+
+
+def test_chat_warns_when_output_cap_reached() -> None:
+    provider = StaticProvider(["Partial reply"], finish_reasons=["length"])
+    engine = make_engine(provider)
+    result = engine.chat(user_message="Hello", history=[])
+    assert result.reply == "Partial reply"
+    assert any("output cap" in warning for warning in result.warnings)
+
+
+def test_unknown_model_does_not_send_reasoning() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    settings = Settings(
+        provider="openrouter",
+        openrouter_api_key="test-key",
+        reasoning_effort="high",
+    )
+    engine = InterviewEngine(
+        settings,
+        provider=provider,
+        catalog=ModelCatalog(models={}),
+    )
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.last_request is not None
+    assert provider.last_request.reasoning_effort is None
+
+
+def test_reasoning_model_receives_high_effort() -> None:
+    provider = StaticProvider([QUESTION_JSON])
+    settings = Settings(
+        provider="openrouter",
+        openrouter_api_key="test-key",
+        reasoning_effort="high",
+    )
+    catalog = ModelCatalog(
+        models={
+            "openai/gpt-6-luna": ModelInfo(
+                id="openai/gpt-6-luna",
+                supported_parameters=("reasoning",),
+            )
+        }
+    )
+    engine = InterviewEngine(settings, provider=provider, catalog=catalog)
+    engine.generate_questions(role="AI engineer", job_description="")
+    assert provider.last_request is not None
+    assert provider.last_request.reasoning_effort == "high"
+
+
+def test_reasoning_fallback_notice_is_visible() -> None:
+    provider = StaticProvider(
+        [QUESTION_JSON],
+        notices=[
+            "The model did not support the selected reasoning effort; the "
+            "request was retried without reasoning."
+        ],
+    )
+    engine = make_engine(provider)
+    result = engine.generate_questions(role="AI engineer", job_description="")
+    assert any("retried without reasoning" in warning for warning in result.warnings)
 
 
 def test_chained_technique_makes_two_calls() -> None:
@@ -318,6 +409,39 @@ RUBRIC_JSON = json.dumps(
 )
 
 
+BAD_RUBRIC_JSON = json.dumps(
+    {
+        "role": "AI engineer",
+        "criteria": [
+            {
+                "key": "technical_depth",
+                "label": "Technical depth",
+                "weight": 90,
+                "descriptors": ["specific systems", "no hand-waving"],
+            },
+            {
+                "key": "problem_solving",
+                "label": "Problem solving",
+                "weight": 20,
+                "descriptors": ["trade-offs", "diagnosis"],
+            },
+            {
+                "key": "communication",
+                "label": "Communication",
+                "weight": 20,
+                "descriptors": ["structure", "clarity"],
+            },
+            {
+                "key": "role_fit",
+                "label": "Role fit",
+                "weight": 20,
+                "descriptors": ["motivation", "examples"],
+            },
+        ],
+    }
+)
+
+
 def test_generate_rubric_returns_validated_rubric() -> None:
     provider = StaticProvider([RUBRIC_JSON])
     engine = make_engine(provider)
@@ -328,6 +452,43 @@ def test_generate_rubric_returns_validated_rubric() -> None:
     assert len(result.rubric.criteria) == 4
     assert sum(item.weight for item in result.rubric.criteria) == 100
     assert result.usage.provider == "fake"
+
+
+def test_generate_rubric_retries_once_on_schema_error() -> None:
+    provider = StaticProvider([BAD_RUBRIC_JSON, RUBRIC_JSON])
+    engine = make_engine(provider)
+    result = engine.generate_rubric(role="AI engineer")
+    assert len(result.rubric.criteria) == 4
+    assert provider.calls == 2
+    assert engine.session.calls == 2
+
+
+def test_generate_rubric_reports_reason_after_retry() -> None:
+    provider = StaticProvider([BAD_RUBRIC_JSON, BAD_RUBRIC_JSON])
+    engine = make_engine(provider)
+    with pytest.raises(EngineError, match="total"):
+        engine.generate_rubric(role="AI engineer")
+    assert provider.calls == 2
+
+
+def test_generate_rubric_reports_truncation_after_one_call() -> None:
+    provider = StaticProvider(
+        ['{"role": "AI engineer", "criteria": ['],
+        finish_reasons=["length"],
+    )
+    engine = make_engine(provider)
+    with pytest.raises(EngineError, match="truncated"):
+        engine.generate_rubric(role="AI engineer")
+    assert provider.calls == 1
+
+
+def test_generate_rubric_fills_missing_role() -> None:
+    payload = json.loads(RUBRIC_JSON)
+    payload.pop("role")
+    provider = StaticProvider([json.dumps(payload)])
+    engine = make_engine(provider)
+    result = engine.generate_rubric(role="Staff AI engineer")
+    assert result.rubric.role == "Staff AI engineer"
 
 
 def test_field_caps_reject_oversized_role() -> None:
@@ -349,6 +510,20 @@ def test_question_memory_regenerates_once_on_duplicate(tmp_path) -> None:
     result = engine.generate_questions(role="AI engineer", job_description="")
     assert provider.calls == 3
     assert any("Near-duplicate" in warning for warning in result.warnings)
+
+
+def test_memory_failure_does_not_block_question_generation(monkeypatch) -> None:
+    class BrokenMemory:
+        def __init__(self, *_args, **_kwargs) -> None:
+            raise MemoryUnavailable("offline")
+
+    monkeypatch.setattr("interview_practice.engine.QuestionMemory", BrokenMemory)
+    provider = StaticProvider([QUESTION_JSON])
+    engine = make_engine(provider, enable_question_memory=True)
+    result = engine.generate_questions(role="AI engineer", job_description="")
+    assert result.question_set.questions
+    assert any("memory unavailable" in warning for warning in result.warnings)
+    assert provider.calls == 1
 
 
 JUDGE_JSON = json.dumps(

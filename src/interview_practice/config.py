@@ -225,6 +225,7 @@ class Settings:
     global_rate_per_minute: int = 30
     openrouter_api_key: str = field(default="", repr=False)
     openrouter_app_url: str = PUBLIC_APP_URL
+    openrouter_timeout_seconds: float = 60.0
     local_base_url: str = LOCAL_BASE_URL
     local_api_key: str = field(default="", repr=False)
     local_model: str = ""
@@ -233,6 +234,7 @@ class Settings:
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     local_embedding_model: str = DEFAULT_LOCAL_EMBEDDING_MODEL
     question_memory_max_items: int = 500
+    question_memory_duplicate_distance: float = 0.15
     enable_image_generation: bool = False
     image_model: str = DEFAULT_IMAGE_MODEL
     enable_llm_judge: bool = False
@@ -276,6 +278,9 @@ class Settings:
                 os.getenv("OPENROUTER_APP_URL", PUBLIC_APP_URL).strip()
                 or PUBLIC_APP_URL
             ),
+            openrouter_timeout_seconds=_env_float(
+                "OPENROUTER_TIMEOUT_SECONDS", 60.0
+            ),
             local_base_url=os.getenv("LOCAL_BASE_URL", LOCAL_BASE_URL).strip()
             or LOCAL_BASE_URL,
             local_api_key=os.getenv("LOCAL_API_KEY", "").strip(),
@@ -294,6 +299,9 @@ class Settings:
             ).strip()
             or DEFAULT_LOCAL_EMBEDDING_MODEL,
             question_memory_max_items=_env_int("QUESTION_MEMORY_MAX_ITEMS", 500),
+            question_memory_duplicate_distance=_env_float(
+                "QUESTION_MEMORY_DUPLICATE_DISTANCE", 0.15
+            ),
             enable_image_generation=_env_bool("ENABLE_IMAGE_GENERATION", False),
             image_model=os.getenv("IMAGE_MODEL", DEFAULT_IMAGE_MODEL).strip()
             or DEFAULT_IMAGE_MODEL,
@@ -317,6 +325,8 @@ class Settings:
                 )
             if not self.openrouter_app_url.startswith(("http://", "https://")):
                 raise ValueError("OPENROUTER_APP_URL must be an HTTP(S) URL")
+            if self.openrouter_timeout_seconds <= 0:
+                raise ValueError("openrouter_timeout_seconds must be positive")
         if self.provider == "local" and not self.local_base_url:
             raise ValueError("LOCAL_BASE_URL is required for local mode")
         if not 0.0 <= self.temperature <= 2.0:
@@ -339,6 +349,10 @@ class Settings:
             raise ValueError("global_max_cost_per_day must be zero or positive")
         if self.global_rate_per_minute < 0:
             raise ValueError("global_rate_per_minute must be zero or positive")
+        if not 0.0 <= self.question_memory_duplicate_distance <= 2.0:
+            raise ValueError(
+                "question_memory_duplicate_distance must be between 0 and 2"
+            )
         if self.chain_runtime not in ALLOWED_CHAIN_RUNTIMES:
             raise ValueError(f"chain_runtime must be one of {ALLOWED_CHAIN_RUNTIMES}")
         if self.response_style not in ALLOWED_RESPONSE_STYLES:
@@ -362,6 +376,7 @@ SECRET_KEYS = frozenset(
         "OPENROUTER_API_KEY",
         "OPENROUTER_MODEL",
         "OPENROUTER_APP_URL",
+        "OPENROUTER_TIMEOUT_SECONDS",
         "LOCAL_API_KEY",
         "LOCAL_BASE_URL",
         "LOCAL_MODEL",
@@ -383,6 +398,7 @@ SECRET_KEYS = frozenset(
         "LOCAL_EMBEDDING_MODEL",
         "QUESTION_MEMORY_PATH",
         "QUESTION_MEMORY_MAX_ITEMS",
+        "QUESTION_MEMORY_DUPLICATE_DISTANCE",
         "IMAGE_MODEL",
         "DOMAIN_PROFILE",
         "RESPONSE_STYLE",
@@ -458,6 +474,16 @@ def apply_secret_values(
             "question_memory_max_items",
             settings.question_memory_max_items,
         ),
+        (
+            "QUESTION_MEMORY_DUPLICATE_DISTANCE",
+            "question_memory_duplicate_distance",
+            settings.question_memory_duplicate_distance,
+        ),
+        (
+            "OPENROUTER_TIMEOUT_SECONDS",
+            "openrouter_timeout_seconds",
+            settings.openrouter_timeout_seconds,
+        ),
     ):
         if source in values:
             if target in {
@@ -465,6 +491,8 @@ def apply_secret_values(
                 "top_p",
                 "session_cost_cap_usd",
                 "global_max_cost_per_day",
+                "question_memory_duplicate_distance",
+                "openrouter_timeout_seconds",
             }:
                 updates[target] = _coerce_float(values[source], default)
             else:

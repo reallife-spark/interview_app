@@ -159,11 +159,10 @@ def parse_json_object(text: str) -> dict[str, Any]:
             lines = lines[:-1]
         candidate = "\n".join(lines).strip()
     start = candidate.find("{")
-    end = candidate.rfind("}")
-    if start == -1 or end == -1 or end <= start:
+    if start == -1:
         raise SchemaError("response does not contain a JSON object")
     try:
-        payload = json.loads(candidate[start : end + 1])
+        payload, _end = json.JSONDecoder().raw_decode(candidate[start:])
     except json.JSONDecodeError as exc:
         raise SchemaError("response contains invalid JSON") from exc
     if not isinstance(payload, dict):
@@ -265,8 +264,18 @@ def validate_judge_score(payload: Mapping[str, Any]) -> JudgeScore:
     )
 
 
-def validate_interview_rubric(payload: Mapping[str, Any]) -> InterviewRubric:
-    role = _required_text(payload, "role")
+def validate_interview_rubric(
+    payload: Mapping[str, Any],
+    *,
+    default_role: str | None = None,
+) -> InterviewRubric:
+    raw_role = payload.get("role")
+    if isinstance(raw_role, str) and raw_role.strip():
+        role = raw_role.strip()
+    elif default_role and default_role.strip():
+        role = default_role.strip()
+    else:
+        raise SchemaError("role must be a non-empty string")
     raw_criteria = payload.get("criteria")
     if not isinstance(raw_criteria, list) or not 4 <= len(raw_criteria) <= 6:
         raise SchemaError("criteria must contain 4 to 6 items")
@@ -282,13 +291,7 @@ def validate_interview_rubric(payload: Mapping[str, Any]) -> InterviewRubric:
         if key in seen:
             raise SchemaError(f"duplicate rubric key: {key}")
         seen.add(key)
-        weight = raw.get("weight")
-        if (
-            not isinstance(weight, int)
-            or isinstance(weight, bool)
-            or not 1 <= weight <= 100
-        ):
-            raise SchemaError(f"criterion {index} weight must be 1-100")
+        weight = _rubric_weight(raw.get("weight"), index)
         descriptors = raw.get("descriptors")
         if not isinstance(descriptors, list) or len(descriptors) < 2:
             raise SchemaError(f"criterion {index} needs two descriptors")
@@ -311,6 +314,22 @@ def validate_interview_rubric(payload: Mapping[str, Any]) -> InterviewRubric:
     if total != 100:
         raise SchemaError("rubric weights must total 100")
     return InterviewRubric(role=role, criteria=tuple(criteria))
+
+
+def _rubric_weight(value: object, index: int) -> int:
+    if isinstance(value, bool):
+        raise SchemaError(f"criterion {index} weight must be an integer")
+    if isinstance(value, int):
+        weight = value
+    elif isinstance(value, float) and value.is_integer():
+        weight = int(value)
+    elif isinstance(value, str) and value.strip().isdigit():
+        weight = int(value.strip())
+    else:
+        raise SchemaError(f"criterion {index} weight must be an integer")
+    if not 1 <= weight <= 100:
+        raise SchemaError(f"criterion {index} weight must be 1-100")
+    return weight
 
 
 def _required_text(payload: Mapping[str, Any], key: str) -> str:

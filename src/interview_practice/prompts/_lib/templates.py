@@ -57,6 +57,27 @@ RUBRIC_SCHEMA_HINT = """{
       "label": "Technical depth",
       "weight": 30,
       "descriptors": ["what a strong answer shows", "what a weak answer misses"]
+    },
+    {
+      "key": "problem_solving",
+      "label": "Problem solving",
+      "weight": 25,
+      "descriptors": [
+        "how the candidate diagnoses",
+        "how the candidate chooses a trade-off"
+      ]
+    },
+    {
+      "key": "communication",
+      "label": "Communication",
+      "weight": 25,
+      "descriptors": ["structure and clarity", "checks understanding"]
+    },
+    {
+      "key": "role_fit",
+      "label": "Role fit",
+      "weight": 20,
+      "descriptors": ["relevant examples", "motivation and ownership"]
     }
   ]
 }"""
@@ -64,6 +85,25 @@ RUBRIC_SCHEMA_HINT = """{
 
 def _job_description_block(value: str) -> str:
     return f"<JobDescription>{escape(value.strip() or 'Not provided')}</JobDescription>"
+
+
+def budget_messages(
+    messages: list[ChatMessage],
+    max_tokens: int,
+) -> list[ChatMessage]:
+    """Add a concise output-budget note to the last user message."""
+
+    if max_tokens <= 0 or not messages:
+        return messages
+    hint = (
+        f"\n\nBudget: the application will stop the response at about "
+        f"{max_tokens} completion tokens. Keep the response complete and "
+        "concise. If it is JSON, keep the whole object valid; use short field "
+        "values and at most two answer points when space is tight. Do not add "
+        "commentary."
+    )
+    last = messages[-1]
+    return [*messages[:-1], ChatMessage(last.role, last.content + hint)]
 
 
 def build_system_prompt(
@@ -206,16 +246,20 @@ def rubric_messages(
         <Role>{escape(role.strip() or "AI engineer")}</Role>
         {_job_description_block(job_description)}
 
-        Produce 4 to 6 criteria covering technical depth, problem solving,
-        communication and role fit. Weights must total 100. Return only JSON
-        matching this shape:
+        Produce 4 to 6 criteria. Use only these keys: technical_depth,
+        problem_solving, communication, role_fit, collaboration, ownership.
+        Each criterion needs a label, an integer weight from 1 to 100, and at
+        least two descriptors. The weights must total exactly 100. Repeat the
+        role exactly in the "role" field. Adapt the labels and descriptors to
+        the role; do not copy the example text. Return only one JSON object
+        matching this shape, with no markdown fences or commentary:
         {RUBRIC_SCHEMA_HINT}
         """
     ).strip()
     return [
         ChatMessage(
             "system",
-            build_system_prompt("role_persona", canary, domain=domain, style=style),
+            build_system_prompt("json_schema", canary, domain=domain, style=style),
         ),
         ChatMessage("user", user),
     ]

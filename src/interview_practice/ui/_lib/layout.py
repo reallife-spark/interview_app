@@ -235,12 +235,21 @@ def _sidebar(base: Settings, session: SessionState) -> tuple[Settings, str]:
         )
         max_token_limit = max(64, int(base.max_output_tokens))
         max_tokens = st.slider(
-            "Max output tokens",
+            "Hard output cap",
             32,
             max_token_limit,
             min(int(base.max_tokens), max_token_limit),
             16,
+            help=(
+                "A hard provider limit, not an answer-length control. Lower "
+                "values can truncate structured JSON. Use Response style for "
+                "shorter answers."
+            ),
             key="max_tokens",
+        )
+        st.caption(
+            "Hard cap: lower values can truncate JSON. Use Response style for "
+            "shorter answers."
         )
         top_p = st.slider(
             "Top-p",
@@ -368,6 +377,11 @@ def _show_model_info(engine: InterviewEngine, settings: Settings) -> None:
     info = engine.catalog.get(settings.model)
     if info is None:
         st.sidebar.caption("Model metadata is not loaded yet.")
+        if settings.reasoning_effort:
+            st.sidebar.warning(
+                "Reasoning support is unknown for this model; the effort "
+                "setting is not sent."
+            )
         return
     context = (
         f"{info.context_length:,} tokens"
@@ -385,6 +399,16 @@ def _show_model_info(engine: InterviewEngine, settings: Settings) -> None:
     json_mode = "yes" if info.supports_json_mode else "no/unknown"
     reasoning = "yes" if info.supports("reasoning") else "no/unknown"
     st.sidebar.caption(f"JSON mode: {json_mode} · Reasoning: {reasoning}")
+    if settings.reasoning_effort and not info.supports("reasoning"):
+        st.sidebar.warning(
+            "This model does not advertise reasoning; the effort setting is "
+            "ignored."
+        )
+    elif settings.reasoning_effort == "high" and info.supports("reasoning"):
+        st.sidebar.caption(
+            "High reasoning uses the same output budget; raise the Hard output "
+            "cap if the reply is truncated."
+        )
 
 
 def _show_stats(session: SessionState, settings: Settings) -> None:
@@ -425,6 +449,14 @@ def _prepare_tab(engine: InterviewEngine, technique: str) -> None:
         )
     with col_b:
         count = st.slider("Questions", 3, 8, 5, key="question_count")
+
+    recommended = 200 + count * 120
+    if engine.settings.max_tokens < recommended:
+        st.warning(
+            f"A {engine.settings.max_tokens}-token hard cap may truncate "
+            f"{count} questions. Raise it to about {recommended} or reduce the "
+            "question count. Use Response style for shorter answers."
+        )
 
     if st.button("Generate question set", type="primary", key="generate"):
         st.session_state["role"] = role
@@ -519,14 +551,26 @@ def _practice_tab(engine: InterviewEngine, technique: str) -> None:
         st.info("Generate a question set in the Prepare tab first.")
         return
     options = {
-        f"{question.id}: {question.question}": question
-        for question in result.question_set.questions
+        question.id: question for question in result.question_set.questions
     }
-    selected_label = st.selectbox("Question", list(options), key="practice_question")
-    selected = options[selected_label]
+    if st.session_state.get("practice_question") not in options:
+        st.session_state["practice_question"] = next(iter(options))
+    selected_id = st.selectbox(
+        "Question",
+        list(options),
+        format_func=lambda key: (
+            f"{key} · {options[key].category} · {options[key].difficulty}"
+        ),
+        key="practice_question",
+    )
+    selected = options[selected_id]
+    with st.container(border=True):
+        st.markdown(f"**{selected.id}. {selected.question}**")
+        st.caption(f"{selected.category} · {selected.difficulty}")
+        st.write(selected.why)
     answer = st.text_area(
         "Your answer",
-        height=180,
+        height=220,
         placeholder="Write the answer you would give in the interview.",
         key="answer_input",
     )

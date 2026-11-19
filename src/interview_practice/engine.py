@@ -190,21 +190,25 @@ class InterviewEngine:
         usages: list[CallUsage] = []
         requirements = ""
         if technique == "chained":
+            first_messages = self.prompts.chain_stage_one(
+                role=role,
+                job_description=context.text,
+                canary=self.session.canary,
+                domain=self.settings.domain_profile,
+                style=self.settings.response_style,
+            )
             first_completion, first_usage = self._call(
-                self.prompts.chain_stage_one(
-                    role=role,
-                    job_description=context.text,
-                    canary=self.session.canary,
-                    domain=self.settings.domain_profile,
-                    style=self.settings.response_style,
+                self.prompts.with_budget(
+                    first_messages, self._effective_max_tokens()
                 )
             )
+            self._add_notice(first_completion, warnings)
             usages.append(first_usage)
             first_guard = self._check_output(first_completion.text)
             warnings.extend(first_guard.warnings)
             requirements = first_guard.text
 
-        completion, usage = self._call(
+        messages = self.prompts.with_budget(
             self.prompts.question_set(
                 technique,
                 role=role,
@@ -216,8 +220,13 @@ class InterviewEngine:
                 domain=self.settings.domain_profile,
                 style=self.settings.response_style,
             ),
+            self._effective_max_tokens(),
+        )
+        completion, usage = self._call(
+            messages,
             response_format={"type": "json_object"},
         )
+        self._add_notice(completion, warnings)
         usages.append(usage)
         guarded = self._check_output(completion.text)
         warnings.extend(guarded.warnings)
@@ -225,14 +234,16 @@ class InterviewEngine:
             payload = parse_json_object(guarded.text)
             question_set = validate_question_set(payload)
         except SchemaError as exc:
+            if self._is_truncated(completion):
+                raise EngineError(self._truncation_message("question set")) from exc
             raise EngineError(
                 "The model returned an invalid question-set JSON object. "
                 "Try again or switch prompt technique."
             ) from exc
         if self.settings.enable_question_memory:
-            memory = self._get_memory()
             model = self._active_model()
             try:
+                memory = self._get_memory()
                 duplicate = any(
                     memory.has_near_duplicate(
                         question.question,
@@ -245,7 +256,7 @@ class InterviewEngine:
                     warnings.append(
                         "Near-duplicate question detected; regenerated once."
                     )
-                    retry_completion, retry_usage = self._call(
+                    retry_messages = self.prompts.with_budget(
                         self.prompts.question_set(
                             technique,
                             role=role,
@@ -260,20 +271,39 @@ class InterviewEngine:
                             domain=self.settings.domain_profile,
                             style=self.settings.response_style,
                         ),
+                        self._effective_max_tokens(),
+                    )
+                    retry_completion, retry_usage = self._call(
+                        retry_messages,
                         response_format={"type": "json_object"},
                     )
+                    self._add_notice(retry_completion, warnings)
                     usages.append(retry_usage)
                     retry_guard = self._check_output(retry_completion.text)
-                    warnings.extend(retry_guard.warnings)
-                    question_set = validate_question_set(
-                        parse_json_object(retry_guard.text)
-                    )
+                    self._extend_unique(warnings, retry_guard.warnings)
+                    try:
+                        question_set = validate_question_set(
+                            parse_json_object(retry_guard.text)
+                        )
+                    except SchemaError as retry_exc:
+                        if self._is_truncated(retry_completion):
+                            raise EngineError(
+                                self._truncation_message("question set")
+                            ) from retry_exc
+                        raise
                 memory.add_questions(
                     question_set.questions,
                     provider=self.settings.provider,
                     model=model,
                 )
-            except (MemoryUnavailable, SchemaError) as exc:
+            except MemoryUnavailable:
+                self._extend_unique(
+                    warnings,
+                    (
+                        "Question memory unavailable; duplicate check skipped.",
+                    ),
+                )
+            except SchemaError as exc:
                 raise EngineError(
                     "Question memory could not be updated."
                 ) from exc
@@ -312,7 +342,7 @@ class InterviewEngine:
                 warnings, self._check_input(job_description, "job description")
             )
 
-        completion, usage = self._call(
+        messages = self.prompts.with_budget(
             self.prompts.answer_evaluation(
                 technique,
                 question=question,
@@ -322,14 +352,21 @@ class InterviewEngine:
                 domain=self.settings.domain_profile,
                 style=self.settings.response_style,
             ),
+            self._effective_max_tokens(),
+        )
+        completion, usage = self._call(
+            messages,
             response_format={"type": "json_object"},
         )
+        self._add_notice(completion, warnings)
         guarded = self._check_output(completion.text)
         warnings.extend(guarded.warnings)
         try:
             payload = parse_json_object(guarded.text)
             evaluation = validate_answer_evaluation(payload)
         except SchemaError as exc:
+            if self._is_truncated(completion):
+                raise EngineError(self._truncation_message("evaluation")) from exc
             raise EngineError(
                 "The model returned an invalid evaluation JSON object. "
                 "Try again or switch prompt technique."
@@ -356,7 +393,7 @@ class InterviewEngine:
             self._extend_unique(
                 warnings, self._check_input(job_description, "job description")
             )
-        completion, usage = self._call(
+        messages = self.prompts.with_budget(
             self.prompts.rubric(
                 role=role,
                 job_description=job_description,
@@ -364,18 +401,69 @@ class InterviewEngine:
                 domain=self.settings.domain_profile,
                 style=self.settings.response_style,
             ),
+            self._effective_max_tokens(),
+        )
+        completion, usage = self._call(
+            messages,
             response_format={"type": "json_object"},
         )
+        self._add_notice(completion, warnings)
         guarded = self._check_output(completion.text)
-        warnings.extend(guarded.warnings)
+        self._extend_unique(warnings, guarded.warnings)
         try:
-            payload = parse_json_object(guarded.text)
-            rubric = validate_interview_rubric(payload)
+            rubric = self._parse_rubric(guarded.text, role)
         except SchemaError as exc:
-            raise EngineError(
-                "The model returned an invalid rubric JSON object. Try again."
-            ) from exc
+            if self._is_truncated(completion):
+                raise EngineError(self._truncation_message("rubric")) from exc
+            repair = ChatMessage(
+                "user",
+                "The previous rubric did not match the schema: "
+                f"{exc}. Return one JSON object only. Use only these keys: "
+                "technical_depth, problem_solving, communication, role_fit, "
+                "collaboration, ownership. Every weight must be an integer and "
+                "the weights must total exactly 100.",
+            )
+            repair_messages = [
+                *messages[:-1],
+                ChatMessage("user", messages[-1].content + "\n\n" + repair.content),
+            ]
+            completion, usage = self._call(
+                repair_messages,
+                response_format={"type": "json_object"},
+            )
+            self._add_notice(completion, warnings)
+            guarded = self._check_output(completion.text)
+            self._extend_unique(warnings, guarded.warnings)
+            try:
+                rubric = self._parse_rubric(guarded.text, role)
+            except SchemaError as retry_exc:
+                if self._is_truncated(completion):
+                    raise EngineError(
+                        self._truncation_message("rubric")
+                    ) from retry_exc
+                raise EngineError(
+                    "The model returned an invalid rubric: "
+                    f"{retry_exc}. Try again, raise Max output tokens, or "
+                    "switch models."
+                ) from retry_exc
         return RubricResult(rubric=rubric, warnings=tuple(warnings), usage=usage)
+
+    def _parse_rubric(self, text: str, role: str) -> InterviewRubric:
+        payload = parse_json_object(text)
+        return validate_interview_rubric(payload, default_role=role)
+
+    def _is_truncated(self, completion: Completion) -> bool:
+        return completion.finish_reason in {"length", "max_tokens"}
+
+    def _effective_max_tokens(self) -> int:
+        return min(self.settings.max_tokens, self.settings.max_output_tokens)
+
+    def _truncation_message(self, label: str) -> str:
+        return (
+            f"The {label} output was truncated at the "
+            f"{self._effective_max_tokens()}-token output cap before it was "
+            "complete. Raise Max output tokens or reduce the requested detail."
+        )
 
     def judge_answer(
         self,
@@ -390,7 +478,7 @@ class InterviewEngine:
         answer = answer.strip()
         if not question or not answer:
             raise EngineError("Question and answer are required for the judge.")
-        completion, usage = self._call(
+        messages = self.prompts.with_budget(
             self.prompts.judge(
                 question=question,
                 answer=answer,
@@ -399,18 +487,26 @@ class InterviewEngine:
                 domain=self.settings.domain_profile,
                 style=self.settings.response_style,
             ),
+            self._effective_max_tokens(),
+        )
+        completion, usage = self._call(
+            messages,
             response_format={"type": "json_object"},
         )
         guarded = self._check_output(completion.text)
+        warnings = list(guarded.warnings)
+        self._add_notice(completion, warnings)
         try:
             judge = validate_judge_score(parse_json_object(guarded.text))
         except SchemaError as exc:
+            if self._is_truncated(completion):
+                raise EngineError(self._truncation_message("judge")) from exc
             raise EngineError(
                 "The judge returned an invalid JSON object. Try again."
             ) from exc
         return JudgeResult(
             judge=judge,
-            warnings=guarded.warnings,
+            warnings=tuple(warnings),
             usage=usage,
         )
 
@@ -448,8 +544,14 @@ class InterviewEngine:
                 style=self.settings.response_style,
             )
         )
+        self._add_notice(completion, warnings)
         guarded = self._check_output(completion.text)
         warnings.extend(guarded.warnings)
+        if self._is_truncated(completion):
+            self._extend_unique(
+                warnings,
+                ("The reply hit the output cap and may be truncated.",),
+            )
         return ChatResult(
             reply=guarded.text,
             warnings=tuple(warnings),
@@ -467,10 +569,7 @@ class InterviewEngine:
 
     def _get_memory(self) -> QuestionMemory:
         if self._question_memory is None:
-            try:
-                self._question_memory = QuestionMemory(self.settings)
-            except MemoryUnavailable as exc:
-                raise EngineError(str(exc)) from exc
+            self._question_memory = QuestionMemory(self.settings)
         return self._question_memory
 
     def _call(
@@ -492,8 +591,8 @@ class InterviewEngine:
             model = self.settings.model
         model_info = self.catalog.get(model)
         supports_json = bool(model_info and model_info.supports("response_format"))
-        supports_reasoning = (
-            True if model_info is None else model_info.supports("reasoning")
+        supports_reasoning = bool(
+            model_info and model_info.supports("reasoning")
         )
         max_tokens = min(self.settings.max_tokens, self.settings.max_output_tokens)
         request = CompletionRequest(
@@ -545,6 +644,11 @@ class InterviewEngine:
         self.session.record(usage)
         self.global_budget.record(usage)
         return completion, usage
+
+    @staticmethod
+    def _add_notice(completion: Completion, warnings: list[str]) -> None:
+        if completion.notice and completion.notice not in warnings:
+            warnings.append(completion.notice)
 
     @staticmethod
     def _check_length(text: str, label: str, limit: int) -> None:

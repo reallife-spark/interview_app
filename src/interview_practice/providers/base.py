@@ -41,6 +41,7 @@ class Completion:
     total_tokens: int = 0
     cost_usd: float | None = None
     finish_reason: str = ""
+    notice: str = ""
 
 
 class Provider(Protocol):

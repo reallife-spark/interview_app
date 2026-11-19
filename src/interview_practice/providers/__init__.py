@@ -41,6 +41,7 @@ def build_provider(
             settings.openrouter_api_key,
             session=session,
             app_url=settings.openrouter_app_url,
+            timeout=settings.openrouter_timeout_seconds,
         )
     if settings.provider == "local":
         return OpenAILocalProvider(

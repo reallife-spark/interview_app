@@ -103,7 +103,8 @@ to a remote provider.
 4. Choose a difficulty and number of questions.
 5. Click **Generate question set**.
 6. Open **Practice**, choose a question, write an answer and click
-   **Evaluate answer**.
+   **Evaluate answer**. The selector uses short `q1`-style labels; the full
+   selected question is shown in a bordered panel above the answer box.
 7. Open **Coach**, choose an interviewer style and ask a follow-up question.
 
 ## Optional features
@@ -113,7 +114,7 @@ to a remote provider.
 | Interview rubric | **Prepare → Generate interview rubric** | One model call |
 | Excel red-team report | Developer settings → **Build jailbreak report**, or `python scripts/jailbreak_report.py --demo` | No network; formula cells sanitised |
 | Image generation | Enable in Developer settings; OpenRouter only; enter a prompt and click once | Extra cost; hidden for Demo/`agx64` |
-| Question memory | Enable Chroma; generated questions only | Local `.chroma`; provider-scoped |
+| Question memory | Enable Chroma; generated questions only | Local `.chroma`; provider-scoped; instance-local on Streamlit Cloud |
 | LangChain runtime | Select `langchain`; OpenRouter only | Optional dependency; native default |
 | LLM judge | Enable; then **Run LLM judge** after an evaluation | Extra cost; default off |
 | Parameter comparison | `python scripts/compare_settings.py --demo` | Deterministic; `--live` optional |
@@ -179,14 +180,19 @@ Chat history is not saved to disk.
 | Discover agx64 models | n/a | Refreshes the local model list | Run once after the gateway is up |
 | Prompt technique | JSON schema | How the prompt is structured | JSON schema for reliable parsing; other techniques for comparison |
 | Temperature | 0.7 | Randomness | Lower for consistent questions; higher for variety |
-| Max output tokens | 1,200 | Maximum reply length | Raise for detailed feedback; lower for cost control |
+| Hard output cap | 1,200 | Hard provider stop, not an answer-length control | Raise for detailed structured JSON; use **Response style** for shorter answers. Low values can truncate JSON |
 | Top-p | 1.0 | Nucleus sampling | Usually leave at 1.0 |
-| Reasoning effort | none | Reasoning budget when supported | Use only when the model supports it |
+| Reasoning effort | none | Reasoning budget when supported | Use only when the model advertises it; high uses more of the output budget |
 | Strict safety | off | Blocks known injection patterns | Turn on for a harder security demo |
 | Hybrid RAG-lite | off | Selects job-description chunks with BM25 + hashed vectors + RRF | Turn on for long job descriptions |
 | Session call cap | 20 | Model calls per session | Protects against repeated calls |
 | Session cost cap | $0.50 | Estimated spend per session | Protects against cost abuse |
 | Input cap | 8,000 chars | Maximum input length | Keeps prompts bounded |
+
+Reducing the hard cap does not by itself make each answer shorter; it can cut a
+JSON object mid-field. The app adds a budget hint to structured prompts, and a
+truncated response now reports the cap explicitly. Use **Response style** or
+reduce the question count instead of lowering the cap alone.
 
 ## 8. Prompt techniques
 
@@ -264,6 +270,11 @@ is blocked, try again in soft mode or clear the session.
 | `OpenRouter request failed (429)` | Rate limit; wait or reduce calls |
 | Price shows `unavailable` | Click **Refresh OpenRouter prices**; the model may not expose pricing |
 | JSON parse error | Switch to **JSON schema**, retry, or check the model output |
+| `invalid rubric` after retry | The error names the failed check; raise **Max output tokens** or switch models. The app retries once automatically |
+| Output cap reached | Raise **Max output tokens** or reduce the number of questions/answer points; the cap is a hard stop, not a length setting |
+| Question memory fails | Memory is optional; the app warns and continues. Check `EMBEDDING_MODEL` and the provider key. On Streamlit Cloud `.chroma` is instance-local and resets on redeploy |
+| High reasoning error | The model may not support it; the app retries once without reasoning and shows a warning. Choose medium/none or raise the Hard output cap |
+| `canary leaked in output` | The model revealed the exact session token; clear the session. A benign mention of the word "canary" no longer triggers this warning |
 | `agx64` fails | Check the public gateway and `LOCAL_BASE_URL`; the older SSH tunnel is `http://127.0.0.1:21464/v1` |
 | Cloud cannot reach `agx64` | Check `LOCAL_BASE_URL` and `LOCAL_API_KEY` in Streamlit secrets; gateways return 401/200 |
 | Local thinking model returns empty content | The reasoning used the output cap; use a non-thinking model such as `gemma4-2b-131k:latest`, or raise **Max output tokens** |
