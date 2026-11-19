@@ -193,6 +193,14 @@ evaluation object fails validation, the app makes one repair call with the
 validation reason; a second failure shows a specific error. A response truncated
 by the output cap is not retried as a schema error.
 
+The evaluation prompt gives the model relevance bands for the 0–100 score: `0-20`
+for an answer that does not answer the question, `21-50` for one that misses what
+was asked, `51-75` for a partly correct answer with clear gaps, `76-90` for a
+direct and supported answer, and `91-100` for a complete, accurate and
+well-evidenced answer. Values in the JSON shape are placeholders, not suggested
+scores. The application does not clamp or compute the score; it is a model
+judgement that can vary between runs and models.
+
 Structured prompts also carry a budget note: the model is told the hard output
 cap and asked to keep the whole object concise. If a response is cut off at the
 cap, the app raises a specific truncation error instead of reporting invalid

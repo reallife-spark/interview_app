@@ -175,6 +175,12 @@ invalid-JSON message. A truncated reply reports the output cap and is not retrie
 as a schema error. If **LLM judge** is enabled, **Run LLM judge** adds a separate
 structured score; it is not the same as the first-pass score.
 
+The score is a model judgement of how directly and correctly the answer addresses
+the question: `0-20` does not answer it, `21-50` misses what was asked, `51-75` is
+partly right with gaps, `76-90` is direct and supported, and `91-100` is complete
+and well evidenced. The app does not calculate or clamp it, so it can vary by
+model and run; an off-topic answer should score low.
+
 ### Coach tab
 
 - **Interviewer style** — strict, neutral or friendly.
